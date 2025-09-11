@@ -1,0 +1,28 @@
+---
+namespace: pokerops
+name: monitoring
+version: 0.0.1
+readme: README.md
+authors:
+  - Ted Cook <358176+teddyphreak@users.noreply.github.com>
+description: RKE2 deployment playbooks
+license:
+  - MIT
+tags:
+  - opensearch
+  - elastic
+  - beats
+dependencies:
+  "nephelaiio.plugins": "*"
+repository: http://github.com/pokerops/ansible-collection-opensearch
+documentation: http://github.com/pokerops/ansible-collection-opensearch
+homepage: http://github.com/pokerops/ansible-collection-opensearch
+issues: http://github.com/pokerops/ansible-collection-opensearch/issues
+build_ignore:
+  - .git
+  - .devbox
+  - .venv
+  - .ansible
+  - ansible_collections
+  - argocd
+  - libvirt

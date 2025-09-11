@@ -1,0 +1,46 @@
+---
+- name: Prepare KVM guests
+  hosts: "rke2_server:rke2_agent"
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+      changed_when: false
+      when: ansible_os_family == 'Debian'
+
+    - name: Install gpg agent
+      ansible.builtin.apt:
+        package: gpg-agent
+      changed_when: false
+      when: ansible_os_family == 'Debian'
+
+    - name: Install python3 binary redirection
+      ansible.builtin.apt:
+        name: python-is-python3
+      when: ansible_os_family == 'Debian'
+
+    - name: Disable ipv6
+      ansible.posix.sysctl:
+        name: "{{ item }}"
+        value: 1
+        sysctl_set: true
+      loop:
+        - net.ipv6.conf.all.disable_ipv6
+        - net.ipv6.conf.default.disable_ipv6
+        - net.ipv6.conf.lo.disable_ipv6
+
+    - name: Install multipath tools
+      ansible.builtin.package:
+        name: "{{ (ansible_os_family == 'Debian') | ternary(_multipath_deb, _multipath_rpm) }}"
+      vars:
+        _multipath_deb: multipath-tools
+        _multipath_rpm: device-mapper-multipath
+
+    - name: Create api host file entry
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: ".*{{ _api_hostname }}.*"
+        line: "{{ ansible_default_ipv4.address }} {{ _api_hostname }}"
+      vars:
+        _api_hostname: "{{ rke2_api_url | urlsplit('hostname') }}"

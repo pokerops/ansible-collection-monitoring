@@ -1,0 +1,50 @@
+---
+- name: Prepare libvirt hosts
+  import_playbook: nephelaiio.libvirt.prepare
+
+- name: Create libvirt guests
+  import_playbook: nephelaiio.libvirt.create
+
+- name: Prepare KVM guests
+  import_playbook: nephelaiio.libvirt.create
+
+- name: Gather KVM guest facts
+  hosts: all
+  gather_facts: true
+
+- name: Prepare Ansible controller
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Check rke2_api_url parameter
+      ansible.builtin.assert:
+        that: rke2_api_url is defined
+        fail_msg: "rke2_api_url must be defined"
+
+    - name: Create api host file entry
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: ".*{{ _api_hostname }}.*"
+        line: "{{ _api_address }} {{ _api_hostname }}"
+      vars:
+        _api_hostname: "{{ rke2_api_url | urlsplit('hostname') }}"
+        _api_address: "{{ hostvars[groups['rke2_server'].0]['ansible_default_ipv4']['address'] }}"
+
+- name: Deploy rke2 cluster
+  import_playbook: pokerops.rke2.install
+
+- name: Copy rke2 kubeconfig
+  hosts: rke2_server
+  run_once: true
+  tasks:
+    - name: Fetch kubeconfig
+      ansible.builtin.slurp:
+        src: /etc/rancher/rke2/rke2.yaml
+      register: kubeconfig_query
+      become: true
+
+    - name: Write kubeconfig
+      ansible.builtin.copy:
+        content: "{{ kubeconfig_query.content | b64decode }}"
+        dest: "{{ molecule_local_kubeconfig }}"
+      delegate_to: localhost

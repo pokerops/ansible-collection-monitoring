@@ -1,0 +1,48 @@
+---
+- name: Load collection defaults
+  import_playbook: pokerops.monitoring.check
+
+- name: Install and configure beat packages
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
+  become: true
+  roles:
+    - pokerops.monitoring.defaults
+  tasks:
+    - name: Deploy and configure elastic repo
+      ansible.builtin.include_role:
+        name: pokerops.monitoring.elastic_repo
+      vars:
+        elastic_repo_major_version: "{{ monitoring_beats_version.split('.')[0] }}"
+        elastic_repo_state: present
+
+    - name: Deploy beats agents
+      block:
+        - name: Deploy and configure filebeat
+          ansible.builtin.include_role:
+            name: pokerops.monitoring.filebeat
+          vars:
+            filebeat_repo_manage: false
+            filebeat_package_state: "{{ monitoring_beats_package_state }}"
+            filebeat_conf_setup: "{{ monitoring_beats_conf_setup }}"
+            filebeat_conf_inputs: "{{ monitoring_filebeat_conf_inputs }}"
+            filebeat_conf_output: "{{ monitoring_filebeat_conf_output }}"
+
+        - name: Deploy and configure metricbeat
+          ansible.builtin.include_role:
+            name: pokerops.monitoring.metricbeat
+          vars:
+            metricbeat_repo_manage: false
+            metricbeat_package_state: "{{ monitoring_beats_package_state }}"
+            metricbeat_conf_setup: "{{ monitoring_beats_conf_setup }}"
+            metricbeat_conf_modules: "{{ monitoring_metricbeat_modules }}"
+            metricbeat_conf_output: "{{ monitoring_metricbeat_conf_output }}"
+
+        - name: Deploy and configure heartbeat
+          ansible.builtin.include_role:
+            name: pokerops.monitoring.heartbeat
+          vars:
+            heartbeat_repo_manage: false
+            heartbeat_package_state: "{{ monitoring_beats_package_state }}"
+            heartbeat_conf_setup: "{{ monitoring_beats_conf_setup }}"
+            heartbeat_conf_monitors: "{{ monitoring_heartbeat_conf_monitors }}"
+            heartbeat_conf_output: "{{ monitoring_heartbeat_conf_output }}"

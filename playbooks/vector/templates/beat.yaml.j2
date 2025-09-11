@@ -1,0 +1,47 @@
+---
+sources:
+  {{ beat_name }}:  
+    type: "logstash"
+    address: "0.0.0.0:{{ beat_port }}"
+    mode: "tcp"
+
+sinks:
+{% if beat_legacy_enable %}
+{%- if beat_name == "filebeat" %}
+  {{ beat_name }}_logstash:
+    type: "http"
+    inputs: ["{{ beat_name }}"]
+    uri: "{{ beat_legacy_logstash }}"
+    encoding:
+      codec: "json"
+    method: "post"
+    healthcheck:
+      enabled: true
+    buffer:
+      type: "memory"
+      max_events: {{ beat_legacy_buffer_max_events | default(10000) }}
+
+{%- elif beat_name in ["metricbeat", "heartbeat"] %}
+  {{ beat_name }}_elasticsearch:
+    type: "elasticsearch"
+    api_version: "auto"
+    inputs: ["{{ beat_name }}"]
+    endpoints: [{% for host in beat_legacy_elasticsearch_hosts %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    mode: "bulk"
+    auth:
+      strategy: "basic"
+      user: "{{ beat_elasticsearch_username }}"
+      password: "{{ beat_elasticsearch_password }}"
+    bulk:
+      index: "{{ (beat_name == 'metricbeat') | ternary(beat_elasticsearch_index_metricbeat, beat_elasticsearch_index_heartbeat) }}"
+
+{% endif %}
+{%- else %}
+  {{ beat_name }}_file:
+    type: "file"
+    inputs: ["{{ beat_name }}"]
+    path: "/var/log/vector/{{ beat_name }}.log"
+    encoding:
+      codec: "json"
+
+{%- endif %}

@@ -1,0 +1,71 @@
+---
+monitoring_vector_version: "0.50.0"
+monitoring_beats_version: "9.9.3"
+
+monitoring_vector_conf_path: /etc/vector
+monitoring_vector_filebeat_port: 9000
+monitoring_vector_metricbeat_port: 9200
+monitoring_vector_heartbeat_port: 9300
+monitoring_vector_packetbeat_port: 9400
+monitoring_vector_beat_file_size: 52428800
+monitoring_vector_beat_file_count: 7
+
+monitoring_legacy_enable: false
+monitoring_legacy_logstash: ""
+monitoring_legacy_elasticsearch_hosts: []
+monitoring_legacy_elasticsearch_username: ""
+monitoring_legacy_elasticsearch_password: ""
+monitoring_legacy_elasticsearch_index_metricbeat: metricbeat
+monitoring_legacy_elasticsearch_index_heartbeat: heartbeat
+
+monitoring_beats_package_state: present
+monitoring_beats_conf_setup:
+  dashboards.enabled: false
+  template.enabled: false
+  ilm.enabled: false
+
+monitoring_filebeat_inputs: []
+monitoring_filebeat_inputs_system:
+  - type: filestream
+    id: system
+    paths:
+      - /var/log/syslog
+      - /var/log/auth.log
+      - /var/log/kern.log
+  - type: filestream
+    id: packages
+    paths:
+      - /var/log/apt/history.log
+    parsers:
+      multiline:
+        pattern: "^Start-Date: "
+        flush_pattern: "^$"
+        negate: true
+        match: after
+monitoring_filebeat_conf_inputs: "{{ monitoring_filebeat_inputs + monitoring_filebeat_inputs_system }}"
+monitoring_filebeat_conf_output:
+  logstash.hosts: ["localhost:{{ monitoring_vector_filebeat_port }}"]
+
+monitoring_metricbeat_modules:
+  - module: system
+    enabled: true
+    metricsets:
+      - cpu
+      - load
+      - memory
+      - network
+      - process
+      - core
+      - diskio
+      - filesystem
+      - fsstat
+    cpu:
+      metrics:
+        - percentages
+        - normalized_percentages
+monitoring_metricbeat_conf_output:
+  logstash.hosts: ["localhost:{{ monitoring_vector_metricbeat_port }}"]
+
+monitoring_heartbeat_conf_monitors: []
+monitoring_heartbeat_conf_output:
+  logstash.hosts: ["localhost:{{ monitoring_vector_heartbeat_port }}"]

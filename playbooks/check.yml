@@ -1,0 +1,13 @@
+---
+- name: Check client configuration
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
+  become: true
+  roles:
+    - pokerops.monitoring.defaults
+  tasks:
+    - name: Verify distribution support
+      ansible.builtin.assert:
+        that: ansible_facts['os_family'] in supported_distributions
+        fail_msg: "Unsupported distribution family {{ ansible_facts['os_family'] }}. Supported distributions are: {{ supported_distributions }}"
+      vars:
+        supported_distributions: ["Debian"]

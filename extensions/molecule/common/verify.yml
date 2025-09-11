@@ -1,0 +1,28 @@
+---
+- name: Install and configure beat packages
+  hosts: all
+  become: true
+  roles:
+    - pokerops.monitoring.defaults
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Verify beats daemons
+      ansible.builtin.assert:
+        that:
+          - service_installed
+          - service_running
+          - service_enabled
+        fail_msg: "{{ fail_uninstalled if not service_installed else (fail_offline if not service_running else fail_disabled) }}"
+      vars:
+        fail_uninstalled: "{{ item }} service is not installed"
+        fail_offline: "{{ item }} service is not running"
+        fail_disabled: "{{ item }} service is not enabled"
+        service_installed: "{{ item + '.service' in ansible_facts.services }}"
+        service_running: "{{ ansible_facts.services[item + '.service'].state == 'running' }}"
+        service_enabled: "{{ ansible_facts.services[item + '.service'].status == 'enabled' }}"
+      loop:
+        - filebeat
+        - metricbeat
+        - heartbeat

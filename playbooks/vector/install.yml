@@ -1,0 +1,155 @@
+- name: Install and configure beat packages
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
+  become: true
+  roles:
+    - pokerops.monitoring.defaults
+  tasks:
+    - name: Verify Vector legacy install params
+      when: monitoring_legacy_enable | bool
+      block:
+        - name: Verify logstash parameter
+          ansible.builtin.assert:
+            that: monitoring_legacy_logstash != ""
+            fail_msg: "monitoring_legacy_logstash must be set when legacy install mode is enabled"
+
+        - name: Verify elasticsearch hosts parameter
+          ansible.builtin.assert:
+            that: monitoring_legacy_elasticsearch_hosts | length > 0
+            fail_msg: "monitoring_legacy_elasticsearch_hosts must be set legacy install mode is enabled"
+
+        - name: Verify elasticsearch username parameter
+          ansible.builtin.assert:
+            that: monitoring_legacy_elasticsearch_username != ""
+            fail_msg: "monitoring_legacy_elasticsearch_username must be set when legacy install mode is enabled"
+
+        - name: Verify elasticsearch password parameter
+          ansible.builtin.assert:
+            that: monitoring_legacy_elasticsearch_password != ""
+            fail_msg: "monitoring_legacy_elasticsearch_password must be set when legacy install mode is enabled"
+
+        - name: Verify elasticsearch metricbeat index parameter
+          ansible.builtin.assert:
+            that: monitoring_legacy_elasticsearch_index_metricbeat != ""
+            fail_msg: "monitoring_legacy_elasticsearch_index_metricbeat must be set when legacy install mode is enabled"
+
+        - name: Verify elasticsearch heartbeat index parameter
+          ansible.builtin.assert:
+            that: monitoring_legacy_elasticsearch_index_heartbeat != ""
+            fail_msg: "monitoring_legacy_elasticsearch_index_heartbeat must be set when legacy install mode is enabled"
+
+    - name: Install Vector agent
+      ansible.builtin.apt:
+        deb: https://packages.timber.io/vector/{{ monitoring_vector_version }}/vector_{{ monitoring_vector_version }}-1_amd64.deb
+
+    - name: Create Vector service override directory
+      ansible.builtin.file:
+        path: /etc/systemd/system/vector.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy Vector service overrides
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/vector.service.d/vector.conf
+        content: |
+          [Service]
+          ExecStart=
+          ExecStart=-/usr/bin/vector --config-dir {{ monitoring_vector_conf_path }}
+          ExecStartPre=
+          ExecStartPre=-/usr/bin/vector validate --config-dir {{ monitoring_vector_conf_path }}
+          ExecReload=
+          ExecReload=-/usr/bin/vector validate --no-environment --config-dir {{ monitoring_vector_conf_path }}
+          ExecReload=/bin/kill -HUP $MAINPID
+      notify: reload systemd
+
+    - name: Create Vector configuration directory
+      ansible.builtin.file:
+        path: "{{ monitoring_vector_conf_path }}"
+        state: directory
+        owner: vector
+        group: vector
+        mode: "0750"
+
+    - name: Create Vector log directory
+      ansible.builtin.file:
+        path: /var/log/vector
+        state: directory
+        owner: vector
+        group: vector
+        mode: "0755"
+
+    - name: Drop Vector default configuration
+      ansible.builtin.file:
+        dest: "{{ item }}"
+        state: absent
+      loop:
+        - "/etc/vector/vector.toml"
+        - "/etc/vector/vector.yaml"
+        - "{{ monitoring_vector_conf_path }}/examples"
+
+    - name: Deploy Vector beat configurations
+      ansible.builtin.template:
+        src: beat.yaml.j2
+        dest: "{{ monitoring_vector_conf_path }}/{{ beat_name }}.yaml"
+        owner: vector
+        group: vector
+        mode: "0640"
+      vars:
+        beat_name: "{{ item.name }}"
+        beat_port: "{{ item.port }}"
+        beat_legacy_enable: "{{ monitoring_legacy_enable }}"
+        beat_legacy_logstash: "{{ monitoring_legacy_logstash }}"
+        beat_legacy_elasticsearch_hosts: "{{ monitoring_legacy_elasticsearch_hosts }}"
+        beat_elasticsearch_index: "{{ monitoring_legacy_elasticsearch_index }}"
+        beat_elasticsearch_username: "{{ monitoring_legacy_elasticsearch_username }}"
+        beat_elasticsearch_password: "{{ monitoring_legacy_elasticsearch_password }}"
+        beat_elasticsearch_index_metricbeat: "{{ monitoring_legacy_elasticsearch_index_metricbeat }}"
+        beat_elasticsearch_index_heartbeat: "{{ monitoring_legacy_elasticsearch_index_heartbeat }}"
+      loop_control:
+        label: "{{ item.name }}"
+      loop:
+        - name: filebeat
+          port: "{{ monitoring_vector_filebeat_port }}"
+        - name: metricbeat
+          port: "{{ monitoring_vector_metricbeat_port }}"
+        - name: heartbeat
+          port: "{{ monitoring_vector_heartbeat_port }}"
+
+    - name: Validate Vector configuration
+      ansible.builtin.command:
+        cmd: "/usr/bin/vector validate --config-dir {{ monitoring_vector_conf_path }}"
+      register: vector_validate
+      changed_when: false
+
+    - name: Deploy logrotate configuration for Vector logs
+      ansible.builtin.copy:
+        dest: /etc/logrotate.d/vector
+        content: |
+          /var/log/vector/*.log {
+              size {{ monitoring_vector_beat_file_size }}
+              rotate {{ monitoring_vector_beat_file_count }}
+              missingok
+              notifempty
+              compress
+              delaycompress
+              copytruncate
+              create 0644 vector vector
+          }
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Flush Handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Ensure vector service is restarted and enabled
+      ansible.builtin.service:
+        name: vector
+        state: restarted
+        enabled: true
+
+  handlers:
+    - name: reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true

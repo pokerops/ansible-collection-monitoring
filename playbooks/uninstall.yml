@@ -1,0 +1,6 @@
+---
+- name: Uninstall Vector agent
+  import_playbook: pokerops.monitoring.vector.uninstall
+
+- name: Uninstall beats agents
+  import_playbook: pokerops.monitoring.beats.uninstall

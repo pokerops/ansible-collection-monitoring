@@ -1,0 +1,6 @@
+---
+- name: Deploy Vector agent
+  import_playbook: pokerops.monitoring.vector.install
+
+- name: Deploy beats agents
+  import_playbook: pokerops.monitoring.beats.install

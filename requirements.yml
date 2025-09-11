@@ -1,0 +1,9 @@
+---
+collections:
+  - name: pokerops.monitoring
+    source: .
+    type: dir
+  - name: pokerops.rke2
+  - name: nephelaiio.plugins
+  - name: nephelaiio.libvirt
+  - name: ansible.utils

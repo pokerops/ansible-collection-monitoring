@@ -1,0 +1,23 @@
+---
+- name: Uninstall beats packages
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
+  become: true
+  tasks:
+    - name: Purge beats packages
+      ansible.builtin.apt:
+        name:
+          - filebeat
+          - metricbeat
+          - packetbeat
+          - heartbeat
+        state: absent
+        purge: true
+
+    - name: Remove elastic repo file
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/elastic.list
+        state: absent
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
