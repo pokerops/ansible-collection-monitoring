@@ -28,7 +28,7 @@ jobs:
         uses: pokerops/ansible-utils@master
         with:
           run: |
-            make test \
+            make requirements test \
               MOLECULE_LOGDIR=${{ env.MOLECULE_LOGDIR }} \
               MOLECULE_SCENARIO=${{ matrix.scenario }} \
               MOLECULE_KVM_IMAGE=${{ matrix.os }}
