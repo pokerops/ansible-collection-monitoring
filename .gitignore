@@ -13,6 +13,6 @@ libvirt/
 
 # globs
 **/__pycache__/**
-pokerops-vector-*.tar.gz
+pokerops-monitoring-*.tar.gz
 *.ymle
 
