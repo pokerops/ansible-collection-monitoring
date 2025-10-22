@@ -13,10 +13,12 @@ jobs:
     runs-on: libvirt
     strategy:
       matrix:
-        os:
-          - ubuntu2404
-          - ubuntu2204
-          - ubuntu2004
+        image:
+          - https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+          - https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+          - https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+          - https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2
+          - https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
         scenario:
           - legacy
     env:
@@ -29,7 +31,7 @@ jobs:
             make requirements test \
               MOLECULE_LOGDIR=${{ env.MOLECULE_LOGDIR }} \
               MOLECULE_SCENARIO=${{ matrix.scenario }} \
-              MOLECULE_KVM_IMAGE=${{ matrix.os }}
+              MOLECULE_KVM_IMAGE=${{ matrix.image }}
 
       - name: Upload install logs
         uses: actions/upload-artifact@v4
