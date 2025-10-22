@@ -6,7 +6,7 @@
   hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
   become: true
   roles:
-    - pokerops.monitoring.defaults
+    - pokerops.monitoring.monitoring
   tasks:
     - name: Deploy and configure elastic repo
       ansible.builtin.include_role:

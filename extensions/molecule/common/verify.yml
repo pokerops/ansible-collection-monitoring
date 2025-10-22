@@ -3,7 +3,7 @@
   hosts: all
   become: true
   roles:
-    - pokerops.monitoring.defaults
+    - pokerops.monitoring.monitoring
   tasks:
     - name: Gather service facts
       ansible.builtin.service_facts:

@@ -1,8 +1,9 @@
+---
 - name: Install and configure beat packages
   hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
   become: true
   roles:
-    - pokerops.monitoring.defaults
+    - pokerops.monitoring.monitoring
   tasks:
     - name: Verify Vector legacy install params
       when: monitoring_legacy_enable | bool

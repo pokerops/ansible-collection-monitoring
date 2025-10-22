@@ -3,7 +3,7 @@
   hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
   become: true
   roles:
-    - pokerops.monitoring.defaults
+    - pokerops.monitoring.monitoring
   tasks:
     - name: Verify distribution support
       ansible.builtin.assert:
