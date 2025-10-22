@@ -150,8 +150,6 @@ Roles are tested against:
 - Ubuntu Noble (24.04)
 - Ubuntu Jammy (22.04)
 - Ubuntu Bionic (20.04)
-- Debian Trixie (13)
-- Debian Bookworm (12)
 
 ## Development
 
