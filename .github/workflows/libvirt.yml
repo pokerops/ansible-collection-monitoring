@@ -1,0 +1,41 @@
+---
+name: libvirt
+on:
+  pull_request:
+    branches:
+      - master
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  libvirt:
+    name: libvirt
+    runs-on: libvirt
+    strategy:
+      matrix:
+        image:
+          - https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+          - https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+          - https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+        scenario:
+          - legacy
+    env:
+      MOLECULE_LOGDIR: "/tmp/logs"
+    steps:
+      - name: Run devbox tests
+        uses: pokerops/ansible-utils@master
+        with:
+          run: |
+            make requirements test \
+              MOLECULE_LOGDIR=${{ env.MOLECULE_LOGDIR }} \
+              MOLECULE_SCENARIO=${{ matrix.scenario }} \
+              MOLECULE_KVM_IMAGE=${{ matrix.image }}
+
+      - name: Upload install logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: install.${{ matrix.os }}
+          path: |
+            ${{ env.MOLECULE_LOGDIR }}/*.log
+          if-no-files-found: ignore
+        if: always()

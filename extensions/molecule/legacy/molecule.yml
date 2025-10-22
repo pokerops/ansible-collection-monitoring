@@ -23,6 +23,8 @@ platforms:
       - monitoring_clients
 provisioner:
   name: ansible
+  env:
+    ANSIBLE_PIPELINING: true
   playbooks:
     create: ../common/create.yml
     prepare: ../common/prepare.yml

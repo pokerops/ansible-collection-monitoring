@@ -25,4 +25,4 @@
       loop:
         - filebeat
         - metricbeat
-        - heartbeat
+        - heartbeat-elastic
