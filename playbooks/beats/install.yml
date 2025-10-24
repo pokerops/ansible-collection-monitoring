@@ -8,6 +8,11 @@
   roles:
     - pokerops.monitoring.monitoring
   tasks:
+    - name: Uninstall conflicting packages
+      ansible.builtin.package:
+        name: packetbeat
+        state: absent
+
     - name: Deploy and configure elastic repo
       ansible.builtin.include_role:
         name: pokerops.monitoring.elastic_repo
