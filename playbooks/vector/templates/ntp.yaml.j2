@@ -19,9 +19,6 @@ transforms:
       
       # Convert ntp_peer_offset is a float
       .ntp_peer_offset = to_float!(.ntp_peer_offset)
-      
-      # Add metadata
-      .metric_type = "ntp_drift"
 
 sinks:
 {% if beat_elasticsearch_hosts | length > 0 %}
