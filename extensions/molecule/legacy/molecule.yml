@@ -33,9 +33,11 @@ provisioner:
   inventory:
     hosts:
       rke2_server:
-        hosts: localhost
+        hosts:
+          localhost:
       rke2_agent:
-        hosts: localhost
+        hosts:
+          localhost:
       all:
         vars:
           # Molecule params
