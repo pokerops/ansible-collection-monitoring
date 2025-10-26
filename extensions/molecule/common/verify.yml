@@ -1,6 +1,6 @@
 ---
 - name: Install and configure beat packages
-  hosts: all
+  hosts: all:!localhost
   become: true
   roles:
     - pokerops.monitoring.monitoring
