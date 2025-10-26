@@ -140,7 +140,7 @@
                   "function": "{{ monitoring_agent_function }}"
                   "log": {
                       "description": "ntp-drift"
-                  } 
+                  }
               }
           }))
         owner: root
