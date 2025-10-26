@@ -54,6 +54,9 @@ provisioner:
           rke2_token: "secret"
           # Monitoring params
           monitoring_vector_output_file_enable: true
+          monitoring_agent_location: "local"
+          monitoring_agent_environment: "molecule"
+          monitoring_agent_function: "test"
           monitoring_elasticsearch_hosts: []
           monitoring_elasticsearch_username: "elasticsearch"
           monitoring_elasticsearch_password: "elasticsearch"

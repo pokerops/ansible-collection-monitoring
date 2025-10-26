@@ -1,6 +1,10 @@
 ---
 monitoring_vector_version: "0.50.0"
 
+monitoring_agent_location: ""
+monitoring_agent_environment: ""
+monitoring_agent_function: ""
+
 monitoring_vector_conf_path: /etc/vector
 monitoring_vector_filebeat_port: 9000
 monitoring_vector_metricbeat_port: 9200

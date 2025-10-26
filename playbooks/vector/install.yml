@@ -5,18 +5,33 @@
   roles:
     - pokerops.monitoring.monitoring
   tasks:
-    - name: Verify Vector legacy install params
+    - name: Verify Vector install params
       when: monitoring_elasticsearch_hosts | length > 0
       block:
+        - name: Verify agent location parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_location != ""
+            fail_msg: "monitoring_agent_location parameter is required"
+
+        - name: Verify agent environment parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_environment != ""
+            fail_msg: "monitoring_agent_environment parameter is required"
+
+        - name: Verify agent function parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_function != ""
+            fail_msg: "monitoring_agent_function parameter is required"
+
         - name: Verify elasticsearch username parameter
           ansible.builtin.assert:
             that: monitoring_elasticsearch_username != ""
-            fail_msg: "monitoring_elasticsearch_username must be set when legacy install mode is enabled"
+            fail_msg: "monitoring_elasticsearch_username parameter is required"
 
         - name: Verify elasticsearch password parameter
           ansible.builtin.assert:
             that: monitoring_elasticsearch_password != ""
-            fail_msg: "monitoring_elasticsearch_password must be set when legacy install mode is enabled"
+            fail_msg: "monitoring_elasticsearch_password parameter is required"
 
     - name: Install Vector agent
       ansible.builtin.apt:
@@ -115,7 +130,18 @@
           print(json.dumps({
               "server_time": datetime.fromtimestamp(reply.tx_time, timezone.utc).isoformat(),
               "ntp_peer_address": "time.cloudflare.com",
-              "ntp_peer_offset": abs(reply.offset)
+              "ntp_peer_offset": abs(reply.offset),
+              "host": {
+                  "name": "{{ ansible_facts.hostname }}",
+              },
+              "fields": {
+                  "location": "{{ monitoring_agent_location }}",
+                  "environment": "{{ monitoring_agent_environment }}",
+                  "function": "{{ monitoring_agent_function }}"
+                  "log": {
+                      "description": "ntp-drift"
+                  } 
+              }
           }))
         owner: root
         group: root
