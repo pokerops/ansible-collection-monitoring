@@ -1,0 +1,55 @@
+---
+sources:
+  ntp_check:  
+    type: "exec"
+    mode: "scheduled"
+    scheduled:
+      exec_interval_secs: {{ vector_ntp_script_interval }}
+    decoding:
+      codec: "json"
+    command: [ "{{ vector_ntp_script_path }}" ]
+
+transforms:
+  ntp_data:
+    type: "remap"
+    inputs: ["ntp_check"]
+    source: |
+      # Convert server_time to ISO8601 format
+      .server_time = parse_timestamp!(.server_time, format: "%+")
+      
+      # Add hostname
+      .hostname = get_hostname!()
+      
+      # Convert ntp_peer_offset is a float
+      .ntp_peer_offset = to_float!(.ntp_peer_offset)
+      
+      # Add metadata
+      .metric_type = "ntp_drift"
+
+sinks:
+{% if beat_elasticsearch_hosts | length > 0 %}
+  ntp_elasticsearch:
+    type: "elasticsearch"
+    api_version: "auto"
+    inputs: ["ntp_data"]
+    endpoints: [{% for host in beat_elasticsearch_hosts %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    mode: "bulk"
+    auth:
+      strategy: "basic"
+      user: "{{ beat_elasticsearch_username }}"
+      password: "{{ beat_elasticsearch_password }}"
+    bulk:
+      index: "{{ vector_ntp_index }}"
+    encoding:
+      timestamp_format: "rfc3339"
+{%- endif %}
+
+{% if vector_output_file_enable %}
+  ntp_file:
+    type: "file"
+    inputs: ["ntp_data"]
+    path: "/var/log/vector/ntp.log"
+    encoding:
+      codec: "json"
+      timestamp_format: "rfc3339"
+{%- endif %}

@@ -9,15 +9,16 @@ description: RKE2 deployment playbooks
 license:
   - MIT
 tags:
+  - elasticsearch
   - opensearch
   - elastic
   - beats
 dependencies:
   "nephelaiio.plugins": "*"
-repository: http://github.com/pokerops/ansible-collection-opensearch
-documentation: http://github.com/pokerops/ansible-collection-opensearch
-homepage: http://github.com/pokerops/ansible-collection-opensearch
-issues: http://github.com/pokerops/ansible-collection-opensearch/issues
+repository: http://github.com/pokerops/ansible-collection-monitoring
+documentation: http://github.com/pokerops/ansible-collection-monitoring
+homepage: http://github.com/pokerops/ansible-collection-monitoring
+issues: http://github.com/pokerops/ansible-collection-monitoring/issues
 build_ignore:
   - .git
   - .devbox
