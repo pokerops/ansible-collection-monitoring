@@ -5,42 +5,48 @@
   roles:
     - pokerops.monitoring.monitoring
   tasks:
-    - name: Verify Vector legacy install params
-      when: monitoring_legacy_enable | bool
+    - name: Verify Vector install params
+      when: monitoring_elasticsearch_hosts | length > 0
       block:
-        - name: Verify logstash parameter
+        - name: Verify agent location parameter
           ansible.builtin.assert:
-            that: monitoring_legacy_logstash != ""
-            fail_msg: "monitoring_legacy_logstash must be set when legacy install mode is enabled"
+            that: monitoring_agent_location != ""
+            fail_msg: "monitoring_agent_location parameter is required"
 
-        - name: Verify elasticsearch hosts parameter
+        - name: Verify agent environment parameter
           ansible.builtin.assert:
-            that: monitoring_legacy_elasticsearch_hosts | length > 0
-            fail_msg: "monitoring_legacy_elasticsearch_hosts must be set legacy install mode is enabled"
+            that: monitoring_agent_environment != ""
+            fail_msg: "monitoring_agent_environment parameter is required"
+
+        - name: Verify agent function parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_function != ""
+            fail_msg: "monitoring_agent_function parameter is required"
 
         - name: Verify elasticsearch username parameter
           ansible.builtin.assert:
-            that: monitoring_legacy_elasticsearch_username != ""
-            fail_msg: "monitoring_legacy_elasticsearch_username must be set when legacy install mode is enabled"
+            that: monitoring_elasticsearch_username != ""
+            fail_msg: "monitoring_elasticsearch_username parameter is required"
 
         - name: Verify elasticsearch password parameter
           ansible.builtin.assert:
-            that: monitoring_legacy_elasticsearch_password != ""
-            fail_msg: "monitoring_legacy_elasticsearch_password must be set when legacy install mode is enabled"
-
-        - name: Verify elasticsearch metricbeat index parameter
-          ansible.builtin.assert:
-            that: monitoring_legacy_elasticsearch_index_metricbeat != ""
-            fail_msg: "monitoring_legacy_elasticsearch_index_metricbeat must be set when legacy install mode is enabled"
-
-        - name: Verify elasticsearch heartbeat index parameter
-          ansible.builtin.assert:
-            that: monitoring_legacy_elasticsearch_index_heartbeat != ""
-            fail_msg: "monitoring_legacy_elasticsearch_index_heartbeat must be set when legacy install mode is enabled"
+            that: monitoring_elasticsearch_password != ""
+            fail_msg: "monitoring_elasticsearch_password parameter is required"
 
     - name: Install Vector agent
       ansible.builtin.apt:
         deb: https://packages.timber.io/vector/{{ monitoring_vector_version }}/vector_{{ monitoring_vector_version }}-1_amd64.deb
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_facts.os_family == "Debian"
+      changed_when: false
+
+    - name: Install Vector dependencies
+      ansible.builtin.apt:
+        name: python3-ntplib
+        state: present
 
     - name: Create Vector service override directory
       ansible.builtin.file:
@@ -97,25 +103,66 @@
         group: vector
         mode: "0640"
       vars:
+        vector_output_file_enable: "{{ monitoring_vector_output_file_enable }}"
         beat_name: "{{ item.name }}"
         beat_port: "{{ item.port }}"
-        beat_legacy_enable: "{{ monitoring_legacy_enable }}"
-        beat_legacy_logstash: "{{ monitoring_legacy_logstash }}"
-        beat_legacy_elasticsearch_hosts: "{{ monitoring_legacy_elasticsearch_hosts }}"
-        beat_elasticsearch_index: "{{ monitoring_legacy_elasticsearch_index }}"
-        beat_elasticsearch_username: "{{ monitoring_legacy_elasticsearch_username }}"
-        beat_elasticsearch_password: "{{ monitoring_legacy_elasticsearch_password }}"
-        beat_elasticsearch_index_metricbeat: "{{ monitoring_legacy_elasticsearch_index_metricbeat }}"
-        beat_elasticsearch_index_heartbeat: "{{ monitoring_legacy_elasticsearch_index_heartbeat }}"
+        beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
+        beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
+        beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
+        beat_elasticsearch_index: "{{ item.index }}"
       loop_control:
         label: "{{ item.name }}"
-      loop:
-        - name: filebeat
-          port: "{{ monitoring_vector_filebeat_port }}"
-        - name: metricbeat
-          port: "{{ monitoring_vector_metricbeat_port }}"
-        - name: heartbeat
-          port: "{{ monitoring_vector_heartbeat_port }}"
+      loop: "{{ monitoring_beat_configs }}"
+
+    - name: Deploy Vector ntp script
+      ansible.builtin.copy:
+        dest: "{{ monitoring_vector_ntp_script_path }}"
+        content: |
+          #!/usr/bin/env python3
+
+          import ntplib
+          import json
+          from datetime import datetime, timezone
+          from time import ctime
+
+          client = ntplib.NTPClient()
+          reply = client.request("time.cloudflare.com")
+          print(json.dumps({
+              "server_time": datetime.fromtimestamp(reply.tx_time, timezone.utc).isoformat(),
+              "ntp_peer_address": "time.cloudflare.com",
+              "ntp_peer_offset": abs(reply.offset),
+              "host": {
+                  "name": "{{ ansible_facts.hostname }}",
+              },
+              "fields": {
+                  "location": "{{ monitoring_agent_location }}",
+                  "environment": "{{ monitoring_agent_environment }}",
+                  "function": "{{ monitoring_agent_function }}"
+                  "log": {
+                      "description": "ntp-drift"
+                  }
+              }
+          }))
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy Vector ntp configuration
+      ansible.builtin.template:
+        src: ntp.yaml.j2
+        dest: "{{ monitoring_vector_conf_path }}/ntp.yaml"
+        owner: vector
+        group: vector
+        mode: "0640"
+      vars:
+        vector_output_file_enable: "{{ monitoring_vector_output_file_enable }}"
+        vector_ntp_script_path: "{{ monitoring_vector_ntp_script_path }}"
+        vector_ntp_script_interval: "{{ monitoring_vector_ntp_script_interval }}"
+        vector_ntp_index: "{{ monitoring_elasticsearch_index_ntp }}"
+        beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
+        beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
+        beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
+        beat_elasticsearch_index: "{{ item.index }}"
 
     - name: Validate Vector configuration
       ansible.builtin.command:
@@ -128,8 +175,8 @@
         dest: /etc/logrotate.d/vector
         content: |
           /var/log/vector/*.log {
-              size {{ monitoring_vector_beat_file_size }}
-              rotate {{ monitoring_vector_beat_file_count }}
+              size {{ monitoring_vector_output_file_size }}
+              rotate {{ monitoring_vector_output_file_count }}
               missingok
               notifempty
               compress

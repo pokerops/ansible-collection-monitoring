@@ -14,13 +14,6 @@ This collection provides roles and playbooks for setting up comprehensive monito
 - [**Heartbeat**](https://www.elastic.co/beats/heartbeat): Uptime monitoring for services
 - [**Vector**](https://vector.dev/): High-performance observability data pipeline
 
-## Modes of operation
-
-The collection supports two primary modes of operation for deploying monitoring agents:
-
-- Legacy Mode: Direct installation of Elastic Beats on target hosts for log and metric collection forwarding to local Vector instance that relays to upstream Elasticsearch and Logstash deployments
-- Standard Mode: Standard metric collection using Vector OS source with sink to server side Vector and ELK/Grafana stack managed by Helm chart
-
 ## ToDo
 
 - Move Vector tasks to standalone role

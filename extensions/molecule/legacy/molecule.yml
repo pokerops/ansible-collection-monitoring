@@ -7,14 +7,6 @@ dependency:
 driver:
   name: default
 platforms:
-  - name: monitoring-${MOLECULE_SCENARIO_NAME}-cluster-01
-    image: "${MOLECULE_KVM_IMAGE}"
-    cpu: 6
-    mem: 16
-    groups:
-      - rke2_server
-      - rke2_agent
-      - monitoring_clients
   - name: monitoring-${MOLECULE_SCENARIO_NAME}-client-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 2
@@ -50,13 +42,20 @@ provisioner:
           molecule_pool_private: "{{ libvirt_address | ansible.utils.ipsubnet(32, -2) }}"
           molecule_install_dir: "{{ lookup('ansible.builtin.env', 'MOLECULE_OUTPUT_DIR', default='/tmp/logs') }}"
           molecule_install_log: "{{ molecule_install_dir }}/${MOLECULE_SCENARIO_NAME}"
-          molecule_local_kubeconfig: "{{ lookup('ansible.builtin.env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}/.kubeconfig"
+          molecule_local_kubeconfig: "{{ lookup('ansible.builtin.env', 'MOLECULE_LOCAL_KUBECONFIG') }}"
           # RKE2 params
           rke2_cluster_name: opensearch.pokerops.net
           rke2_ippool_private: "{{ molecule_pool_private }}"
           rke2_api_url: "https://api.{{ rke2_cluster_name }}:6443"
           rke2_token: "secret"
           # Monitoring params
+          monitoring_vector_output_file_enable: true
+          monitoring_agent_location: "local"
+          monitoring_agent_environment: "molecule"
+          monitoring_agent_function: "test"
+          monitoring_elasticsearch_hosts: []
+          monitoring_elasticsearch_username: "elasticsearch"
+          monitoring_elasticsearch_password: "elasticsearch"
           monitoring_heartbeat_conf_monitors:
             - type: http
               id: "google"

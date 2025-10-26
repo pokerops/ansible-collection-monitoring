@@ -1,22 +1,41 @@
 ---
 monitoring_vector_version: "0.50.0"
-monitoring_beats_version: "9.9.3"
+
+monitoring_agent_location: ""
+monitoring_agent_environment: ""
+monitoring_agent_function: ""
 
 monitoring_vector_conf_path: /etc/vector
 monitoring_vector_filebeat_port: 9000
 monitoring_vector_metricbeat_port: 9200
 monitoring_vector_heartbeat_port: 9300
 monitoring_vector_packetbeat_port: 9400
-monitoring_vector_beat_file_size: 52428800
-monitoring_vector_beat_file_count: 7
+monitoring_vector_output_file_enable: false
+monitoring_vector_output_file_size: 52428800
+monitoring_vector_output_file_count: 7
+monitoring_vector_ntp_script_path: /usr/local/bin/vector-check-drift
+monitoring_vector_ntp_script_peer: time.cloudflare.com
+monitoring_vector_ntp_script_interval: "60"
 
 monitoring_legacy_enable: false
-monitoring_legacy_logstash: ""
-monitoring_legacy_elasticsearch_hosts: []
-monitoring_legacy_elasticsearch_username: ""
-monitoring_legacy_elasticsearch_password: ""
-monitoring_legacy_elasticsearch_index_metricbeat: metricbeat
-monitoring_legacy_elasticsearch_index_heartbeat: heartbeat
+monitoring_beat_configs:
+  - name: filebeat
+    port: "{{ monitoring_vector_filebeat_port }}"
+    index: "{{ monitoring_elasticsearch_index_filebeat }}"
+  - name: metricbeat
+    port: "{{ monitoring_vector_metricbeat_port }}"
+    index: "{{ monitoring_elasticsearch_index_metricbeat }}"
+  - name: heartbeat
+    port: "{{ monitoring_vector_heartbeat_port }}"
+    index: "{{ monitoring_elasticsearch_index_heartbeat }}"
+
+monitoring_elasticsearch_hosts: []
+monitoring_elasticsearch_username: ""
+monitoring_elasticsearch_password: ""
+monitoring_elasticsearch_index_filebeat: filebeat
+monitoring_elasticsearch_index_metricbeat: metricbeat
+monitoring_elasticsearch_index_heartbeat: heartbeat
+monitoring_elasticsearch_index_ntp: ntp
 
 monitoring_beats_package_state: present
 monitoring_beats_conf_setup:
@@ -54,11 +73,8 @@ monitoring_metricbeat_modules:
       - load
       - memory
       - network
-      - process
-      - core
       - diskio
       - filesystem
-      - fsstat
     cpu:
       metrics:
         - percentages
