@@ -1,6 +1,6 @@
 ---
 - name: Install and configure beat packages
-  hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}:!{{ monitoring_exclude | default('monitoring_exclude') }}"
   become: true
   roles:
     - pokerops.monitoring.monitoring

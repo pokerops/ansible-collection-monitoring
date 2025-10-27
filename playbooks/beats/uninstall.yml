@@ -1,6 +1,6 @@
 ---
 - name: Uninstall beats packages
-  hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}:!{{ monitoring_exclude | default('monitoring_exclude') }}"
   become: true
   tasks:
     - name: Purge beats packages

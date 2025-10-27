@@ -3,7 +3,7 @@
   import_playbook: pokerops.monitoring.check
 
 - name: Install and configure beat packages
-  hosts: "{{ monitoring_clients | default('monitoring_clients') }}"
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}:!{{ monitoring_exclude | default('monitoring_exclude') }}"
   become: true
   roles:
     - pokerops.monitoring.monitoring
@@ -17,6 +17,15 @@
       ansible.builtin.include_role:
         name: pokerops.monitoring.elastic_repo
 
+    - name: Deploy and configure metricbeat
+      ansible.builtin.include_role:
+        name: pokerops.monitoring.metricbeat
+      vars:
+        metricbeat_repo_manage: false
+        metricbeat_package_state: "{{ monitoring_beats_package_state }}"
+        metricbeat_conf_modules: "{{ monitoring_metricbeat_modules }}"
+        metricbeat_conf_output: "{{ monitoring_metricbeat_conf_output }}"
+
     - name: Deploy and configure filebeat
       ansible.builtin.include_role:
         name: pokerops.monitoring.filebeat
@@ -26,15 +35,6 @@
         filebeat_conf_setup: "{{ monitoring_beats_conf_setup }}"
         filebeat_conf_inputs: "{{ monitoring_filebeat_conf_inputs }}"
         filebeat_conf_output: "{{ monitoring_filebeat_conf_output }}"
-
-    - name: Deploy and configure metricbeat
-      ansible.builtin.include_role:
-        name: pokerops.monitoring.metricbeat
-      vars:
-        metricbeat_repo_manage: false
-        metricbeat_package_state: "{{ monitoring_beats_package_state }}"
-        metricbeat_conf_modules: "{{ monitoring_metricbeat_modules }}"
-        metricbeat_conf_output: "{{ monitoring_metricbeat_conf_output }}"
 
     - name: Deploy and configure heartbeat
       ansible.builtin.include_role:
