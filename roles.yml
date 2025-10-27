@@ -2,7 +2,7 @@
 roles:
   - name: elastic_repo
     src: https://github.com/nephelaiio/ansible-role-elastic-repo.git
-    version: 7.0.0
+    version: 7.0.1
   - name: metricbeat
     src: https://github.com/nephelaiio/ansible-role-metricbeat.git
     version: 7.0.0
