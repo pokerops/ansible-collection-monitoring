@@ -137,7 +137,7 @@
               "fields": {
                   "location": "{{ monitoring_agent_location }}",
                   "environment": "{{ monitoring_agent_environment }}",
-                  "function": "{{ monitoring_agent_function }}"
+                  "function": "{{ monitoring_agent_function }}",
                   "log": {
                       "description": "ntp-drift"
                   }
