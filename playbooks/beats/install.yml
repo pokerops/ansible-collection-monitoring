@@ -8,6 +8,23 @@
   roles:
     - pokerops.monitoring.monitoring
   tasks:
+    - name: Verify beat install params
+      block:
+        - name: Verify agent location parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_location != ""
+            fail_msg: "monitoring_agent_location parameter is required"
+
+        - name: Verify agent environment parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_environment != ""
+            fail_msg: "monitoring_agent_environment parameter is required"
+
+        - name: Verify agent function parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_function != ""
+            fail_msg: "monitoring_agent_function parameter is required"
+
     - name: Uninstall conflicting packages
       ansible.builtin.package:
         name: packetbeat
@@ -25,6 +42,10 @@
         metricbeat_package_state: "{{ monitoring_beats_package_state }}"
         metricbeat_conf_modules: "{{ monitoring_metricbeat_modules }}"
         metricbeat_conf_output: "{{ monitoring_metricbeat_conf_output }}"
+        metricbeat_conf_fields:
+          location: "{{ monitoring_agent_location }}"
+          environment: "{{ monitoring_agent_environment }}"
+          function: "{{ monitoring_agent_function }}"
 
     - name: Deploy and configure filebeat
       ansible.builtin.include_role:

@@ -5,7 +5,7 @@ roles:
     version: 7.0.0
   - name: metricbeat
     src: https://github.com/nephelaiio/ansible-role-metricbeat.git
-    version: 7.0.0
+    version: 7.0.1
   - name: filebeat
     src: https://github.com/nephelaiio/ansible-role-filebeat.git
     version: 6.1.0
