@@ -6,10 +6,10 @@ monitoring_agent_environment: ""
 monitoring_agent_function: ""
 
 monitoring_vector_conf_path: /etc/vector
-monitoring_vector_filebeat_port: 9000
 monitoring_vector_metricbeat_port: 9200
-monitoring_vector_heartbeat_port: 9300
-monitoring_vector_packetbeat_port: 9400
+monitoring_vector_filebeat_port: 9201
+monitoring_vector_heartbeat_port: 9202
+monitoring_vector_packetbeat_port: 9203
 monitoring_vector_output_file_enable: false
 monitoring_vector_output_file_size: 52428800
 monitoring_vector_output_file_count: 7
