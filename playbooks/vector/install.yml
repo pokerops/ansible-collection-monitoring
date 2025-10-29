@@ -128,7 +128,7 @@
           client = ntplib.NTPClient()
           reply = client.request("time.cloudflare.com")
           print(json.dumps({
-              "server_time": datetime.fromtimestamp(reply.tx_time, timezone.utc).isoformat(),
+              "@timestamp": datetime.fromtimestamp(reply.tx_time, timezone.utc).isoformat(),
               "ntp_peer_address": "time.cloudflare.com",
               "ntp_peer_offset": abs(reply.offset),
               "host": {
