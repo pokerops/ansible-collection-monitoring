@@ -15,7 +15,7 @@ transforms:
     inputs: ["ntp_check"]
     source: |
       # Convert server_time to ISO8601 format
-      .server_time = parse_timestamp!(.server_time, format: "%+")
+      .@timestamp = parse_timestamp!(.@timestamp, format: "%+")
       
       # Convert ntp_peer_offset is a float
       .ntp_peer_offset = to_float!(.ntp_peer_offset)
