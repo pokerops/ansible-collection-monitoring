@@ -56,6 +56,10 @@
         filebeat_conf_setup: "{{ monitoring_beats_conf_setup }}"
         filebeat_conf_inputs: "{{ monitoring_filebeat_conf_inputs }}"
         filebeat_conf_output: "{{ monitoring_filebeat_conf_output }}"
+        filebeat_conf_fields:
+          location: "{{ monitoring_agent_location }}"
+          environment: "{{ monitoring_agent_environment }}"
+          function: "{{ monitoring_agent_function }}"
 
     - name: Deploy and configure heartbeat
       ansible.builtin.include_role:
