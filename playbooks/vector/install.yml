@@ -68,7 +68,7 @@
           ExecReload=
           ExecReload=-/usr/bin/vector validate --no-environment --config-dir {{ monitoring_vector_conf_path }}
           ExecReload=/bin/kill -HUP $MAINPID
-      notify: reload systemd
+      notify: systemd_reload
 
     - name: Create Vector configuration directory
       ansible.builtin.file:
@@ -94,6 +94,7 @@
         - "/etc/vector/vector.toml"
         - "/etc/vector/vector.yaml"
         - "{{ monitoring_vector_conf_path }}/examples"
+      notify: vector_reload
 
     - name: Deploy Vector beat configurations
       ansible.builtin.template:
@@ -113,6 +114,7 @@
       loop_control:
         label: "{{ item.name }}"
       loop: "{{ monitoring_beat_configs }}"
+      notify: vector_reload
 
     - name: Deploy Vector ntp script
       ansible.builtin.copy:
@@ -163,6 +165,7 @@
         beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
         beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
         beat_elasticsearch_index: "{{ item.index }}"
+      notify: vector_reload
 
     - name: Validate Vector configuration
       ansible.builtin.command:
@@ -188,16 +191,20 @@
         group: root
         mode: "0644"
 
-    - name: Flush Handlers
-      ansible.builtin.meta: flush_handlers
-
-    - name: Ensure vector service is restarted and enabled
+    - name: Ensure vector service is started and enabled
       ansible.builtin.service:
         name: vector
-        state: restarted
+        state: started
         enabled: true
 
   handlers:
-    - name: reload systemd
+    - name: Reload systemd
       ansible.builtin.systemd:
         daemon_reload: true
+      listen: systemd_reload
+
+    - name: Vector reload
+      ansible.builtin.service:
+        name: vector
+        state: reloaded
+      listen: vector_reload

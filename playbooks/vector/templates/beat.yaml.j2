@@ -12,6 +12,7 @@ transforms:
     source: |
       # Convert server_time to ISO8601 format
       .@timestamp = parse_timestamp!(.timestamp, format: "%+")
+      .agent.hostname = .agent.name
 
 sinks:
 {% if beat_elasticsearch_hosts | length > 0 %}
