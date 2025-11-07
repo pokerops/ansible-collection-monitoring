@@ -81,13 +81,6 @@ monitoring_metricbeat_modules:
           - percentages
           - normalized_percentages
       period: 10s
-  systemd:
-    - module: system
-      enabled: true
-      metricsets:
-        - process
-      processes: ["systemd$"]
-      period: 10s
 
 monitoring_metricbeat_conf_output:
   logstash.hosts: ["localhost:{{ monitoring_vector_metricbeat_port }}"]
