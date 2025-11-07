@@ -85,9 +85,8 @@ provisioner:
                 enabled: true
                 metricsets:
                   - process
-                processes: ["systemd$"]
+                processes: ["systemd$$"]
                 period: 10s
-
 verifier:
   name: ansible
 scenario:
