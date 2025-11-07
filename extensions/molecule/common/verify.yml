@@ -26,3 +26,15 @@
         - filebeat
         - metricbeat
         - heartbeat-elastic
+
+    - name: Query metricbeat process events
+      ansible.builtin.shell: |
+        jq < /var/log/vector/metricbeat.log 'select(.metricset.name == "process") | .process.executable | select(. | match("systemd$"))' -r
+      register: metricbeat_processes
+      changed_when: false
+
+    - name: Verify metricbeat process monitoring
+      ansible.builtin.assert:
+        that: metricbeat_processes.stdout_lines | length > 0
+        success_msg: "{{ metricbeat_processes.stdout_lines | length }} events found for systemd processes"
+        fail_msg: "{{ metricbeat_processes.stdout_lines | length }} events found for systemd processes"

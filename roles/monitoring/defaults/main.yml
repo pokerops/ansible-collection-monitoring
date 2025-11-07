@@ -66,19 +66,29 @@ monitoring_filebeat_conf_output:
   logstash.hosts: ["localhost:{{ monitoring_vector_filebeat_port }}"]
 
 monitoring_metricbeat_modules:
-  - module: system
-    enabled: true
-    metricsets:
-      - cpu
-      - load
-      - memory
-      - network
-      - diskio
-      - filesystem
-    cpu:
-      metrics:
-        - percentages
-        - normalized_percentages
+  system:
+    - module: system
+      enabled: true
+      metricsets:
+        - cpu
+        - load
+        - memory
+        - network
+        - diskio
+        - filesystem
+      cpu:
+        metrics:
+          - percentages
+          - normalized_percentages
+      period: 10s
+  systemd:
+    - module: system
+      enabled: true
+      metricsets:
+        - process
+      processes: ["systemd$"]
+      period: 10s
+
 monitoring_metricbeat_conf_output:
   logstash.hosts: ["localhost:{{ monitoring_vector_metricbeat_port }}"]
 
