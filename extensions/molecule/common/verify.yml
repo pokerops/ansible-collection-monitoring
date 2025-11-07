@@ -27,14 +27,29 @@
         - metricbeat
         - heartbeat-elastic
 
-    - name: Query metricbeat process events
-      ansible.builtin.shell: |
-        jq < /var/log/vector/metricbeat.log 'select(.metricset.name == "process") | .process.executable | select(. | match("systemd$"))' -r
-      register: metricbeat_processes
-      changed_when: false
+    - name: Pause for 15 seconds to allow beats to send data
+      ansible.builtin.pause:
+        seconds: 15
+
+    - name: Slurp metricbeat events
+      ansible.builtin.slurp:
+        src: /var/log/vector/metricbeat.log
+      register: metricbeat_process_log
+
+    - name: Decode metricbeat events
+      ansible.builtin.set_fact:
+        metricbeat_events: "{{ _event_lines | map('from_json') }}"
+      vars:
+        _event_lines: "{{ metricbeat_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
+
+    - name: Decode process events
+      ansible.builtin.set_fact:
+        metricbeat_processes_systemd: "{{ metricbeat_processes_all | selectattr('process.executable', 'search', 'systemd$') | list }}"
+      vars:
+        metricbeat_processes_all: "{{ metricbeat_events | selectattr('metricset.name', 'equalto', 'process') | list }}"
 
     - name: Verify metricbeat process monitoring
       ansible.builtin.assert:
-        that: metricbeat_processes.stdout_lines | length > 0
-        success_msg: "{{ metricbeat_processes.stdout_lines | length }} events found for systemd processes"
-        fail_msg: "{{ metricbeat_processes.stdout_lines | length }} events found for systemd processes"
+        that: metricbeat_processes_systemd | length > 0
+        success_msg: "{{ metricbeat_processes_systemd | length }} events found for systemd processes"
+        fail_msg: "{{ metricbeat_processes_systemd | length }} events found for systemd processes"
