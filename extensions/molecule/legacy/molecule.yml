@@ -64,6 +64,29 @@ provisioner:
               urls:
                 - "https://www.google.com"
               check.response.status: 200
+          monitoring_metricbeat_modules:
+            system:
+              - module: system
+                enabled: true
+                metricsets:
+                  - cpu
+                  - load
+                  - memory
+                  - network
+                  - diskio
+                  - filesystem
+                cpu:
+                  metrics:
+                    - percentages
+                    - normalized_percentages
+                period: 10s
+            systemd:
+              - module: system
+                enabled: true
+                metricsets:
+                  - process
+                processes: ["systemd$$"]
+                period: 10s
 verifier:
   name: ansible
 scenario:
