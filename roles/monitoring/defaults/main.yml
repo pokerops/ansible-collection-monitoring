@@ -43,6 +43,7 @@ monitoring_beats_conf_setup:
   template.enabled: false
   ilm.enabled: false
 
+monitoring_filebeat_modules: {}
 monitoring_filebeat_inputs: []
 monitoring_filebeat_inputs_system:
   - type: filestream

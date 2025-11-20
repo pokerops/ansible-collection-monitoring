@@ -54,6 +54,7 @@
         filebeat_repo_manage: false
         filebeat_package_state: "{{ monitoring_beats_package_state }}"
         filebeat_conf_setup: "{{ monitoring_beats_conf_setup }}"
+        filebeat_conf_modules: "{{ monitoring_filebeat_modules }}"
         filebeat_conf_inputs: "{{ monitoring_filebeat_conf_inputs }}"
         filebeat_conf_output: "{{ monitoring_filebeat_conf_output }}"
         filebeat_conf_fields:

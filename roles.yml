@@ -8,7 +8,7 @@ roles:
     version: 7.0.5
   - name: filebeat
     src: https://github.com/nephelaiio/ansible-role-filebeat.git
-    version: 7.0.0
+    version: 7.0.1
   - name: heartbeat
     src: https://github.com/nephelaiio/ansible-role-heartbeat.git
     version: 8.0.2
