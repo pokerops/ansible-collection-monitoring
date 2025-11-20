@@ -90,9 +90,10 @@ provisioner:
           monitoring_filebeat_modules:
             postgresql:
               - module: postgresql
-                enabled: true
-                var.paths:
-                  - /var/log/postgresql/postgresql-*.log
+                log:
+                  enabled: true
+                  var.paths:
+                    - /var/log/postgresql/postgresql-*.log
 verifier:
   name: ansible
 scenario:
