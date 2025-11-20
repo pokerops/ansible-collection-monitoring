@@ -6,6 +6,7 @@
 # directories
 .venv/
 .ansible/
+.vscode/
 .devbox/
 .molecule/
 ansible_collections/

@@ -87,6 +87,12 @@ provisioner:
                   - process
                 processes: ["systemd$$"]
                 period: 10s
+          monitoring_filebeat_modules:
+            postgresql:
+              - module: postgresql
+                enabled: true
+                var.paths:
+                  - /var/log/postgresql/postgresql-*.log
 verifier:
   name: ansible
 scenario:
