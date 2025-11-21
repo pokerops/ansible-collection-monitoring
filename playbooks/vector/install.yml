@@ -178,7 +178,7 @@
         vector_output_file_enable: "{{ monitoring_vector_output_file_enable }}"
         vector_name: "{{ item.name }}"
         vector_source: "{{ item.source_config }}"
-        vector_transform: "{{ item.transform_config | default(omit) }}"
+        vector_transform: "{{ item.transform_config | default(false) | sort(attribute='id') }}"
         vector_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
         vector_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
         vector_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"

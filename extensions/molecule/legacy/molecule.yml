@@ -99,10 +99,26 @@ provisioner:
             - name: demologs
               source_config:
                 type: demo_logs
-                format: json
+                count: 5
+                format: apache_common
+                interval: 1
                 lines:
                   - line1
-              index: "mongodb-metrics"
+              transform_config:
+                - id: 2
+                  type: remap
+                  arguments:
+                    drop_on_error: true
+                    source: |
+                      .log_length = strlen!(.message)
+                      .log_msg = "Processed log message"
+                - id: 1
+                  type: filter
+                  arguments:
+                    condition:
+                      type: "vrl"
+                      source: ".status == 500"
+              index: "test-metrics"
 verifier:
   name: ansible
 scenario:
