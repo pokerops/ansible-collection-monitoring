@@ -1,7 +1,7 @@
 ---
 sources:
   {{ vector_name }}_input:
-    {{ vector_source }}
+    {{ vector_source | indent(4) }}
 
 {% if vector_transform %}
 transforms:
