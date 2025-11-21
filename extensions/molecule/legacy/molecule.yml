@@ -94,6 +94,14 @@ provisioner:
                   enabled: true
                   var.paths:
                     - /var/log/postgresql/postgresql-*.log
+          monitoring_vector_enable: true
+          monitoring_vector_configs:
+            - name: "mongodb"
+              source_config:
+                type: mongodb_metrics
+                endpoints:
+                  - mongodb://localhost:27017
+              index: "mongodb-metrics"
 verifier:
   name: ansible
 scenario:

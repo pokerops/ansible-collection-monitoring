@@ -167,6 +167,28 @@
         beat_elasticsearch_index: "{{ item.index }}"
       notify: vector_reload
 
+    - name: Deploy Vector source configurations
+      ansible.builtin.template:
+        src: vector.yaml.j2
+        dest: "{{ monitoring_vector_conf_path }}/{{ vector_name }}.yaml"
+        owner: vector
+        group: vector
+        mode: "0640"
+      vars:
+        vector_output_file_enable: "{{ monitoring_vector_output_file_enable }}"
+        vector_name: "{{ item.name }}"
+        vector_source: "{{ item.source_config }}"
+        vector_transform: "{{ item.transform_config | default(omit) }}"
+        vector_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
+        vector_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
+        vector_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
+        vector_elasticsearch_index: "{{ item.index }}"
+      loop_control:
+        label: "{{ vector_name }}"
+      loop: "{{ monitoring_vector_configs }}"
+      when: monitoring_vector_enable | bool
+      notify: vector_reload
+
     - name: Validate Vector configuration
       ansible.builtin.command:
         cmd: "/usr/bin/vector validate --config-dir {{ monitoring_vector_conf_path }}"

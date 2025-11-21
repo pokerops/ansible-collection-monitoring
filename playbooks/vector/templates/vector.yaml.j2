@@ -1,0 +1,46 @@
+---
+sources:
+  {{ vector_name }}_input:
+    {{ vector_source }}
+
+{% if vector_transform %}
+transforms:
+  {{ vector_name }}_data:
+    type: "remap"
+    inputs: ["{{ vector_name }}_input"]
+    source: |
+      {{ vector_transform | indent(6) }}
+{% endif %}
+
+sinks:
+{% if vector_elasticsearch_hosts | length > 0 %}
+  {{ vector_name }}_elasticsearch:
+    type: "elasticsearch"
+    api_version: "auto"
+    {% if vector_transform %}
+    inputs: ["{{ vector_name }}_data"]
+    {% else %}
+    inputs: ["{{ vector_name }}_input"]
+    {% endif %}
+    endpoints: [{% for host in vector_elasticsearch_hosts %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    mode: "bulk"
+    auth:
+      strategy: "basic"
+      user: "{{ vector_elasticsearch_username }}"
+      password: "{{ vector_elasticsearch_password }}"
+    bulk:
+      index: "{{ vector_elasticsearch_index }}"
+{%- endif %}
+
+{% if vector_output_file_enable %}
+  {{ vector_name }}_file:
+    type: "file"
+    {% if vector_transform %}
+    inputs: ["{{ vector_name }}_data"]
+    {% else %}
+    inputs: ["{{ vector_name }}_input"]
+    {% endif %}
+    path: "/var/log/vector/{{ vector_name }}.log"
+    encoding:
+      codec: "json"
+{%- endif %}

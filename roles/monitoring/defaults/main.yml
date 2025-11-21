@@ -43,6 +43,13 @@ monitoring_beats_conf_setup:
   template.enabled: false
   ilm.enabled: false
 
+monitoring_vector_enable: false
+monitoring_vector_configs:
+  - name: ""
+    source_config: {}
+    transform_config: {}
+    index: ""
+
 monitoring_filebeat_modules: {}
 monitoring_filebeat_inputs: []
 monitoring_filebeat_inputs_system:
