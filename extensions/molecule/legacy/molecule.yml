@@ -99,7 +99,7 @@ provisioner:
             - name: demologs
               source_config:
                 type: demo_logs
-                format: apache_common
+                format: json
                 lines:
                   - line1
               index: "mongodb-metrics"
