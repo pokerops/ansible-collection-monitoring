@@ -96,11 +96,12 @@ provisioner:
                     - /var/log/postgresql/postgresql-*.log
           monitoring_vector_enable: true
           monitoring_vector_configs:
-            - name: "mongodb"
+            - name: demologs
               source_config:
-                type: mongodb_metrics
-                endpoints:
-                  - mongodb://localhost:27017
+                type: demo_logs
+                format: apache_common
+                lines:
+                  - line1
               index: "mongodb-metrics"
 verifier:
   name: ansible
