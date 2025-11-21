@@ -10,6 +10,8 @@ transforms:
     inputs: ["{{ vector_name }}_input"]
     source: |
       {{ vector_transform | indent(6) }}
+{% else %}
+transforms: {}
 {% endif %}
 
 sinks:
