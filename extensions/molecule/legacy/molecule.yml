@@ -94,6 +94,28 @@ provisioner:
                   enabled: true
                   var.paths:
                     - /var/log/postgresql/postgresql-*.log
+          monitoring_vector_enable: true
+          monitoring_vector_configs:
+            demologs:
+              source:
+                demologs_input:
+                  type: demo_logs
+                  count: 5
+                  format: syslog
+                  interval: 1
+              transform:
+                demologs_transform:
+                  input:
+                    - demologs_input
+                  type: remap
+                  drop_on_error: true
+                  source: |
+                    .log_length = strlen!(.message)
+                    .log_msg = "Processed log message"
+              sinks:
+                input:
+                  - demologs_transform
+                index: "test-metrics"
 verifier:
   name: ansible
 scenario:
