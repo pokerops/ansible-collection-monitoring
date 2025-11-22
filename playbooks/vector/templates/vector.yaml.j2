@@ -1,22 +1,10 @@
 ---
 sources:
-  {{ vector_name }}_input:
-    {{ vector_source | to_nice_yaml | indent(4) }}
+  {{ vector_source | to_nice_yaml | indent(2) }}
 
 {% if vector_transform %}
 transforms:
-  {{ vector_name }}_data:
-    inputs: ["{{ vector_name }}_input"]
-{% for transform_types in vector_transform %}
-{% if vector_transform | length > 1 and transform_types.id > 1 %}
-  {{ vector_name }}_{{ transform_types.id }}_data:
-    inputs: ["{{ vector_name }}_data"]
-{% elif vector_transform | length > 2 and transform_types.id > 2 %}
-    inputs: ["{{ vector_name }}_{{ transform_types.id - 1 }}_data"]
-{% endif %}
-    type: {{ transform_types.type }}
-    {{ transform_types.arguments | to_nice_yaml | indent(4) }}
-{% endfor %}
+  {{ vector_transform | to_nice_yaml | indent(2)}}
 {% else %}
 transforms: {}
 {% endif %}
@@ -26,15 +14,7 @@ sinks:
   {{ vector_name }}_elasticsearch:
     type: "elasticsearch"
     api_version: "auto"
-{% if vector_transform %}
-{% if vector_transform | length > 1 %}
-    inputs: ["{{ vector_name }}_{{ vector_transform | length }}_data"]
-{% else %}
-    inputs: ["{{ vector_name }}_data"]
-{% endif %}
-{% else %}
-    inputs: ["{{ vector_name }}_input"]
-{% endif %}
+    inputs: {{ vector_sinks.input }}
     endpoints: [{% for host in vector_elasticsearch_hosts %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
     mode: "bulk"
     auth:
@@ -42,17 +22,13 @@ sinks:
       user: "{{ vector_elasticsearch_username }}"
       password: "{{ vector_elasticsearch_password }}"
     bulk:
-      index: "{{ vector_elasticsearch_index }}"
+      index: "{{ vector_sinks.index }}"
 {%- endif %}
 
 {% if vector_output_file_enable %}
   {{ vector_name }}_file:
     type: "file"
-{% if vector_transform %}
-    inputs: ["{{ vector_name }}_data"]
-{% else %}
-    inputs: ["{{ vector_name }}_input"]
-{% endif %}
+    inputs: {{ vector_sinks.input }}
     path: "/var/log/vector/{{ vector_name }}.log"
     encoding:
       codec: "json"

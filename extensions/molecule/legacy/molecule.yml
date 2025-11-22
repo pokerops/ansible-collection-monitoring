@@ -96,29 +96,26 @@ provisioner:
                     - /var/log/postgresql/postgresql-*.log
           monitoring_vector_enable: true
           monitoring_vector_configs:
-            - name: demologs
-              source_config:
-                type: demo_logs
-                count: 5
-                format: apache_common
-                interval: 1
-                lines:
-                  - line1
-              transform_config:
-                - id: 2
+            demologs:
+              source:
+                demologs_input:
+                  type: demo_logs
+                  count: 5
+                  format: syslog
+                  interval: 1
+              transform:
+                demologs_transform:
+                  input:
+                    - demologs_input
                   type: remap
-                  arguments:
-                    drop_on_error: true
-                    source: |
-                      .log_length = strlen!(.message)
-                      .log_msg = "Processed log message"
-                - id: 1
-                  type: filter
-                  arguments:
-                    condition:
-                      type: "vrl"
-                      source: ".status == 500"
-              index: "test-metrics"
+                  drop_on_error: true
+                  source: |
+                    .log_length = strlen!(.message)
+                    .log_msg = "Processed log message"
+              sinks:
+                input:
+                  - demologs_transform
+                index: "test-metrics"
 verifier:
   name: ansible
 scenario:
