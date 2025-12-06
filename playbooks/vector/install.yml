@@ -98,7 +98,7 @@
 
     - name: Deploy Vector beat configurations
       ansible.builtin.template:
-        src: beat.yaml.j2
+        src: "{{ beat_name }}.yaml.j2"
         dest: "{{ monitoring_vector_conf_path }}/{{ beat_name }}.yaml"
         owner: vector
         group: vector
@@ -112,7 +112,7 @@
         beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
         beat_elasticsearch_index: "{{ item.index }}"
       loop_control:
-        label: "{{ item.name }}"
+        label: "{{ beat_name }}"
       loop: "{{ monitoring_beat_configs }}"
       notify: vector_reload
 
