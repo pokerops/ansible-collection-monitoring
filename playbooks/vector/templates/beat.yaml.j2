@@ -13,9 +13,13 @@ transforms:
       # Convert server_time to ISO8601 format
       .@timestamp = parse_timestamp!(.timestamp, format: "%+")
       .agent.hostname = .agent.name
+{% filter indent(width=4) %}
+{% block transforms %}
+{% endblock transforms %}
+{% endfilter %}
 
 sinks:
-{% if beat_elasticsearch_hosts | length > 0 %}
+  {% if beat_elasticsearch_hosts | length > 0 -%}
   {{ beat_name }}_elasticsearch:
     type: "elasticsearch"
     api_version: "auto"
@@ -28,13 +32,12 @@ sinks:
       password: "{{ beat_elasticsearch_password }}"
     bulk:
       index: "{{ beat_elasticsearch_index }}"
-{%- endif %}
-
-{% if vector_output_file_enable %}
+  {% endif -%}
+  {% if vector_output_file_enable -%}
   {{ beat_name }}_file:
     type: "file"
     inputs: ["{{ beat_name }}_data"]
     path: "/var/log/vector/{{ beat_name }}.log"
     encoding:
       codec: "json"
-{%- endif %}
+  {%- endif %}
