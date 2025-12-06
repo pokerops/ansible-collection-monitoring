@@ -207,8 +207,8 @@
       ansible.builtin.service:
         name: vector
         state: reloaded
-      retries: 6
-      delay: 30
+      retries: "{{ monitoring_vector_reload_retries | default(6) }}"
+      delay: "{{ monitoring_vector_reload_delay | default(30) }}"
       register: vector_reload_result
       until: vector_reload_result is succeeded
       listen: vector_reload
