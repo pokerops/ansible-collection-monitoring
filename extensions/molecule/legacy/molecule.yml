@@ -94,6 +94,11 @@ provisioner:
                   enabled: true
                   var.paths:
                     - /var/log/postgresql/postgresql-*.log
+          monitoring_filebeat_inputs:
+            - type: filestream
+              id: mongodb
+              paths:
+                - "/var/log/mongodb/mongod.log"
 verifier:
   name: ansible
 scenario:

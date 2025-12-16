@@ -2,9 +2,6 @@
 - name: Prepare libvirt hosts
   import_playbook: nephelaiio.libvirt.prepare
 
-- name: Create libvirt guests
-  import_playbook: nephelaiio.libvirt.create
-
 - name: Prepare KVM guests
   import_playbook: nephelaiio.libvirt.create
 

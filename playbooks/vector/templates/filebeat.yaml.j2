@@ -1,1 +1,40 @@
 {% extends "beat.yaml.j2" %}
+{% block transforms %}
+mongodb_data:
+  type: "remap"
+  inputs: ["{{ beat_name }}_tcp"]
+  source: |
+    .mongodb.filename = downcase(string!(.log.file.path))
+    if .mongodb.filename == "/var/log/mongodb/mongod.log" {
+      .mongodb.message = parse_json!(string!(.message))
+      .timestamp = parse_timestamp!(.mongodb.message.t."$$date", format: "%+")
+      .severity = .mongodb.message.s
+      .component = .mongodb.message.c
+      .log_id = .mongodb.message.id
+      .context = .mongodb.message.ctx
+      .message = .mongodb.message.msg
+      if exists(.mongodb.message.attr) {
+        .attributes = .mongodb.message.attr
+      }
+      if exists(.mongodb.message.svc) {
+        .service = .mongodb.message.svc
+      }
+      if exists(.mongodb.message.tags) {
+        .tags = .mongodb.message.tags
+      }
+      if exists(.mongodb.message.truncated) {
+        .truncated = .mongodb.message.truncated
+      }
+      if exists(.mongodb.message.size) {
+        .size = .mongodb.message.size
+      }
+    }
+    del(.mongodb)
+{{ beat_name }}_data:
+  type: "remap"
+  inputs: {{ monitoring_vector_filebeat_transfor_inputs }}
+  source: |
+    # Convert server_time to ISO8601 format
+    .@timestamp = parse_timestamp!(.timestamp, format: "%+")
+    .agent.hostname = .agent.name
+{% endblock transforms %}

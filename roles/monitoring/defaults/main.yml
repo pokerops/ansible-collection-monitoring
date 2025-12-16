@@ -6,7 +6,7 @@ monitoring_agent_environment: ""
 monitoring_agent_function: ""
 
 monitoring_vector_conf_path: /etc/vector
-monitoring_vector_metricbeat_port: 9200
+monitoring_vector_metricbeat_port: 9204
 monitoring_vector_filebeat_port: 9201
 monitoring_vector_heartbeat_port: 9202
 monitoring_vector_packetbeat_port: 9203
@@ -16,6 +16,8 @@ monitoring_vector_output_file_count: 7
 monitoring_vector_ntp_script_path: /usr/local/bin/vector-check-drift
 monitoring_vector_ntp_script_peer: time.cloudflare.com
 monitoring_vector_ntp_script_interval: "60"
+monitoring_vector_filebeat_transfor_inputs:
+  - "mongodb_data"
 
 monitoring_legacy_enable: false
 monitoring_beat_configs:
