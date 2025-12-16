@@ -30,26 +30,11 @@ mongodb_data:
       }
     }
     del(.mongodb)
+{{ beat_name }}_data:
+  type: "remap"
+  inputs: {{ monitoring_vector_filebeat_transfor_inputs }}
+  source: |
+    # Convert server_time to ISO8601 format
+    .@timestamp = parse_timestamp!(.timestamp, format: "%+")
+    .agent.hostname = .agent.name
 {% endblock transforms %}
-{% block sinkbeats %}
-mongodb_elasticsearch:
-  type: "elasticsearch"
-  api_version: "auto"
-  inputs: ["mongodb_data"]
-  endpoints: [{% for host in beat_elasticsearch_hosts %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
-  mode: "bulk"
-  auth:
-    strategy: "basic"
-    user: "{{ beat_elasticsearch_username }}"
-    password: "{{ beat_elasticsearch_password }}"
-  bulk:
-    index: "{{ beat_elasticsearch_index }}"
-{% endblock sinkbeats %}
-{% block sinkfile %}
-mongodb_file:
-  type: "file"
-  inputs: ["mongodb_data"]
-  path: "/var/log/vector/{{ beat_name }}.log"
-  encoding:
-    codec: "json"
-{% endblock sinkfile %}

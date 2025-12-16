@@ -65,8 +65,8 @@
           - _mongodb | rejectattr('message', 'defined') | length == 0
           - _mongodb | rejectattr('component', 'defined') | length == 0
       vars:
-        _mongodb: "{{ filebeat_events | selectattr('log.file.path', 'equalto', _mongodb_path) | list }}"
         _mongodb_path: "/var/log/mongodb/mongod.log"
+        _mongodb: "{{ filebeat_events | selectattr('log.file.path', 'equalto', _mongodb_path) | list }}"
 
     - name: Slurp metricbeat events
       ansible.builtin.slurp:
