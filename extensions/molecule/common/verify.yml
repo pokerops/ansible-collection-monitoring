@@ -27,9 +27,46 @@
         - metricbeat
         - heartbeat-elastic
 
+    - name: Create MongoDB log path
+      ansible.builtin.file:
+        path: /var/log/mongodb
+        state: directory
+
+    - name: Create MongoDB log sample
+      ansible.builtin.template:
+        src: mongod.j2.log
+        dest: /var/log/mongodb/mongod.log
+        owner: root
+        group: syslog
+      vars:
+        _date: "{{ ansible_date_time.iso8601 }}"
+
     - name: Pause for 15 seconds to allow beats to send data
       ansible.builtin.pause:
         seconds: 15
+
+    - name: Slurp filebeat events
+      ansible.builtin.slurp:
+        src: /var/log/vector/filebeat.log
+      register: filebeat_process_log
+
+    - name: Decode filebeat events
+      ansible.builtin.set_fact:
+        filebeat_events: "{{ _event_lines | map('from_json') }}"
+      vars:
+        _event_lines: "{{ filebeat_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
+
+    - name: Verify filebeat mongodb log ingest
+      ansible.builtin.assert:
+        that:
+          - _mongodb | rejectattr('severity', 'defined') | length == 0
+          - _mongodb | rejectattr('log_id', 'defined') | length == 0
+          - _mongodb | rejectattr('context', 'defined') | length == 0
+          - _mongodb | rejectattr('message', 'defined') | length == 0
+          - _mongodb | rejectattr('component', 'defined') | length == 0
+      vars:
+        _mongodb: "{{ filebeat_events | selectattr('log.file.path', 'equalto', _mongodb_path) | list }}"
+        _mongodb_path: "/var/log/mongodb/mongod.log"
 
     - name: Slurp metricbeat events
       ansible.builtin.slurp:
