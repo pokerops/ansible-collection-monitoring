@@ -11,3 +11,14 @@
         fail_msg: "Unsupported distribution family {{ ansible_facts['os_family'] }}. Supported distributions are: {{ supported_distributions }}"
       vars:
         supported_distributions: ["Debian"]
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Verify vector service status
+      ansible.builtin.assert:
+        that:
+          - _service in services
+          - services[_service].state | lower == 'running'
+      vars:
+        _service: vector.service
