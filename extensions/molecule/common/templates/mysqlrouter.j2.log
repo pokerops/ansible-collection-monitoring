@@ -1,0 +1,15 @@
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server01:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] Potential changes detected in cluster
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server02:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] This is a mysqlrouter log
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server03:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] Starting metadata
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server04:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server05:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server06:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server07:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server08:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server09:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server10:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server11:3306 / 33060 - mode=RW
+{{ item.date }} metadata_cache INFO [7f0db85cc700] server12:3306 / 33060 - mode=RW

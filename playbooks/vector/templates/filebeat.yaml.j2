@@ -2,39 +2,54 @@
 {% block transforms %}
 mongodb_data:
   type: "remap"
-  inputs: ["{{ beat_name }}_tcp"]
+  inputs: ["{{ beat_name }}_data"]
   source: |
-    .mongodb.filename = downcase(string!(.log.file.path))
-    if match(.mongodb.filename, r'.*mongodb?.log') {
-      .mongodb.message = parse_json!(string!(.message))
-      .timestamp = parse_timestamp!(.mongodb.message.t."$$date", format: "%+")
-      .severity = .mongodb.message.s
-      .component = .mongodb.message.c
-      .log_id = .mongodb.message.id
-      .context = .mongodb.message.ctx
-      .message = .mongodb.message.msg
-      if exists(.mongodb.message.attr) {
-        .attributes = .mongodb.message.attr
+    .vectortemp.filename = downcase(string!(.log.file.path))
+    if match(.vectortemp.filename, r'.*mongodb?.log') {
+      .vectortemp.message = parse_json!(string!(.message))
+      .mongodb.timestamp = parse_timestamp!(.vectortemp.message.t."$$date", format: "%+")
+      .mongodb.severity = .vectortemp.message.s
+      .mongodb.component = .vectortemp.message.c
+      .mongodb.log_id = .vectortemp.message.id
+      .mongodb.context = .vectortemp.message.ctx
+      .mongodb.message = .vectortemp.message.msg
+      if exists(.vectortemp.message.attr) {
+        .mongodb.attributes = .vectortemp.message.attr
       }
-      if exists(.mongodb.message.svc) {
-        .service = .mongodb.message.svc
+      if exists(.vectortemp.message.svc) {
+        .mongodb.service = .vectortemp.message.svc
       }
-      if exists(.mongodb.message.tags) {
-        .tags = .mongodb.message.tags
+      if exists(.vectortemp.message.tags) {
+        .mongodb.tags = .vectortemp.message.tags
       }
-      if exists(.mongodb.message.truncated) {
-        .truncated = .mongodb.message.truncated
+      if exists(.vectortemp.message.truncated) {
+        .mongodb.truncated = .vectortemp.message.truncated
       }
-      if exists(.mongodb.message.size) {
-        .size = .mongodb.message.size
+      if exists(.vectortemp.message.size) {
+        .mongodb.size = .vectortemp.message.size
       }
+      del(.message)
     }
-    del(.mongodb)
-{{ beat_name }}_data:
+    del(.vectortemp)
+mysqlrouter_data:
   type: "remap"
-  inputs: {{ monitoring_vector_filebeat_transfor_inputs }}
+  inputs: ["mongodb_data"]
   source: |
-    # Convert server_time to ISO8601 format
-    .@timestamp = parse_timestamp!(.timestamp, format: "%+")
-    .agent.hostname = .agent.name
+    .vectortemp.filename = downcase(string!(.log.file.path))
+    if match(.vectortemp.filename, r'.*mysqlrouter.log') {
+      .vectortemp.grok = parse_grok!(
+        string!(.message),
+        "%{DATESTAMP:timestamp} %{DATA:type} %{LOGLEVEL:level} \\[%{DATA:thread_id}\\] %{GREEDYDATA:message}"
+      )
+      .mysqlrouter.timestamp = parse_timestamp!(.vectortemp.grok.timestamp, format: "%y-%m-%d %H:%M:%S")
+      .mysqlrouter.type = .vectortemp.grok.type
+      .mysqlrouter.level = .vectortemp.grok.level
+      .mysqlrouter.thread_id = .vectortemp.grok.thread_id
+      .mysqlrouter.message = .vectortemp.grok.message
+      del(.message)
+    }
+    del(.vectortemp)
 {% endblock transforms %}
+
+{% block sink_elastic %}"mysqlrouter_data"{% endblock %}
+{% block sink_file %}"mysqlrouter_data"{% endblock %}

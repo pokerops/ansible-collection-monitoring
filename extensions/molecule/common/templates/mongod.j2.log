@@ -1,6 +1,7 @@
-{"t":{"$date":"{{ _date }}"},"s":"I","c":"NETWORK","id":10001,"ctx":"listener","msg":"Connection accepted","attr":{"remote":"127.0.0.1:12345","isLoadBalanced":false,"connectionCount":9}}
-{"t":{"$date":"{{ _date }}"},"s":"I","c":"NETWORK","id":10002,"ctx":"listener","msg":"Connection accepted","tags": ["tag1", "tag2", "tag3"]}
-{"t":{"$date":"{{ _date }}"},"s":"I","c":"NETWORK","id":10003,"ctx":"listener","msg":"Connection accepted","attr":{"remote":"127.0.0.1:12345","isLoadBalanced":false,"connectionCount":9}}
-{"t":{"$date":"{{ _date }}"},"s":"I","c":"NETWORK","id":10004,"ctx":"listener","msg":"Connection accepted","tags": ["tag1", "tag2", "tag3"]}
-{"t":{"$date":"{{ _date }}"},"s":"I","c":"NETWORK","id":10005,"ctx":"listener","msg":"Connection accepted","attr":{"remote":"127.0.0.1:12345","isLoadBalanced":false,"connectionCount":9}}
-{"t":{"$date":"{{ _date }}"},"s":"I","c":"NETWORK","id":10005,"ctx":"listener","msg":"Connection accepted","tags": ["tag1", "tag2", "tag3"]}
+{"t":{"$date":"{{ item.date }}"},"s":"I","c":"NETWORK","id":10001,"ctx":"listener","msg":"Connection accepted","attr":{"remote":"10.0.0.1:12345","isLoadBalanced":false,"connectionCount":9}}
+{"t":{"$date":"{{ item.date }}"},"s":"I","c":"NETWORK","id":10002,"ctx":"listener","msg":"Connection accepted","tags": ["tag1", "tag2", "tag3"]}
+{"t":{"$date":"{{ item.date }}"},"s":"I","c":"NETWORK","id":10003,"ctx":"listener","msg":"Connection accepted","attr":{"remote":"10.0.0.2:45465","isLoadBalanced":false,"connectionCount":9}}
+{"t":{"$date":"{{ item.date }}"},"s":"I","c":"NETWORK","id":10004,"ctx":"listener","msg":"Connection accepted","tags": ["tag4", "tag5", "tag6"]}
+{"t":{"$date":"{{ item.date }}"},"s":"I","c":"NETWORK","id":10005,"ctx":"listener","msg":"Connection accepted","attr":{"remote":"10.0.0.3:56789","isLoadBalanced":false,"connectionCount":9}}
+{"t":{"$date":"{{ item.date }}"},"s":"I","c":"NETWORK","id":10006,"ctx":"listener","msg":"Connection accepted","tags": ["tag7", "tag8", "tag9"]}
+{"t":{"$date":"{{ item.date }}"},"s":"I","c":"NETWORK","id":10007,"ctx":"listener","msg":"Connection accepted","tags": ["tag10", "tag11", "tag12"]}
