@@ -99,6 +99,10 @@ provisioner:
               id: mongodb
               paths:
                 - "/var/log/mongodb/mongod.log"
+            - type: filestream
+              id: mysqlrouter
+              paths:
+                - "/var/log/mysqlrouter/mysqlrouter.log"
 verifier:
   name: ansible
 scenario:

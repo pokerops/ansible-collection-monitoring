@@ -6,15 +6,15 @@ sources:
     mode: "tcp"
 
 transforms:
+  {{ beat_name }}_data:
+    type: "remap"
+    inputs: ["{{ beat_name }}_tcp"]
+    source: |
+      # Convert server_time to ISO8601 format
+      .@timestamp = parse_timestamp!(.timestamp, format: "%+")
+      .agent.hostname = .agent.name
 {% filter indent(width=2, first=True) %}
 {% block transforms %}
-{{ beat_name }}_data:
-  type: "remap"
-  inputs: ["{{ beat_name }}_tcp"]
-  source: |
-    # Convert server_time to ISO8601 format
-    .@timestamp = parse_timestamp!(.timestamp, format: "%+")
-    .agent.hostname = .agent.name
 {% endblock transforms %}
 {% endfilter %}
 
@@ -23,7 +23,7 @@ sinks:
   {{ beat_name }}_elasticsearch:
     type: "elasticsearch"
     api_version: "auto"
-    inputs: ["{{ beat_name }}_data"]
+    inputs: [{% block sink_elastick %}"{{ beat_name }}_data"{% endblock %}]
     endpoints: [{% for host in beat_elasticsearch_hosts %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
     mode: "bulk"
     auth:
@@ -36,7 +36,7 @@ sinks:
   {% if vector_output_file_enable -%}
   {{ beat_name }}_file:
     type: "file"
-    inputs: ["{{ beat_name }}_data"]
+    inputs: [{% block sink_file %}"{{ beat_name }}_data"{% endblock %}]
     path: "/var/log/vector/{{ beat_name }}.log"
     encoding:
       codec: "json"

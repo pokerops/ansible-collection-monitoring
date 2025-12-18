@@ -27,19 +27,29 @@
         - metricbeat
         - heartbeat-elastic
 
-    - name: Create MongoDB log path
+    - name: Create log paths
       ansible.builtin.file:
-        path: /var/log/mongodb
+        path: "{{ item }}"
         state: directory
+      loop:
+        - "/var/log/mongodb"
+        - "/var/log/mysqlrouter"
 
-    - name: Create MongoDB log sample
+    - name: Create log samples
       ansible.builtin.template:
-        src: mongod.j2.log
-        dest: /var/log/mongodb/mongod.log
+        src: "{{ item.name }}.j2.log"
+        dest: "{{ item.path }}"
         owner: root
         group: syslog
       vars:
-        _date: "{{ ansible_date_time.iso8601 }}"
+        _ansible_date: "{{ ansible_date_time }}"
+      loop:
+        - name: mongod
+          path: /var/log/mongodb/mongod.log
+          date: "{{ _ansible_date.iso8601 }}"
+        - name: mysqlrouter
+          path: /var/log/mysqlrouter/mysqlrouter.log
+          date: "{{ _ansible_date.date }} {{ _ansible_date.time }}"
 
     - name: Pause for 15 seconds to allow beats to send data
       ansible.builtin.pause:
@@ -56,17 +66,43 @@
       vars:
         _event_lines: "{{ filebeat_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
 
+    - name: Verify filebeat mysqlrouter log ingest
+      ansible.builtin.assert:
+        that:
+          - _mysqlrouter | rejectattr('mysqlrouter.type', 'defined') | length == 0
+          - _mysqlrouter | rejectattr('mysqlrouter.level', 'defined') | length == 0
+          - _mysqlrouter | rejectattr('mysqlrouter.thread_id', 'defined') | length == 0
+          - (_types | length) == (_mysqlrouter | length )
+          - (_levels | length) == (_mysqlrouter | length )
+          - (_thread_ids | length) == (_mysqlrouter | length )
+      vars:
+        _mysqlrouter_path: "/var/log/mysqlrouter/mysqlrouter.log"
+        _mysqlrouter: "{{ filebeat_events | selectattr('log.file.path', 'equalto', _mysqlrouter_path) | list }}"
+        _types: "{{ _mysqlrouter | map(attribute='mysqlrouter.type') }}"
+        _levels: "{{ _mysqlrouter | map(attribute='mysqlrouter.level') }}"
+        _thread_ids: "{{ _mysqlrouter | map(attribute='mysqlrouter.thread_id') }}"
+
     - name: Verify filebeat mongodb log ingest
       ansible.builtin.assert:
         that:
-          - _mongodb | rejectattr('severity', 'defined') | length == 0
-          - _mongodb | rejectattr('log_id', 'defined') | length == 0
-          - _mongodb | rejectattr('context', 'defined') | length == 0
-          - _mongodb | rejectattr('message', 'defined') | length == 0
-          - _mongodb | rejectattr('component', 'defined') | length == 0
+          - _mongodb | rejectattr('mongodb.severity', 'defined') | length == 0
+          - _mongodb | rejectattr('mongodb.log_id', 'defined') | length == 0
+          - _mongodb | rejectattr('mongodb.context', 'defined') | length == 0
+          - _mongodb | rejectattr('mongodb.message', 'defined') | length == 0
+          - _mongodb | rejectattr('mongodb.component', 'defined') | length == 0
+          - (_severities | length) == (_mongodb | length)
+          - (_log_ids | length) == (_mongodb | length)
+          - (_contexts | length) == (_mongodb | length)
+          - (_messages | length) == (_mongodb | length)
+          - (_components | length) == (_mongodb | length)
       vars:
         _mongodb_path: "/var/log/mongodb/mongod.log"
         _mongodb: "{{ filebeat_events | selectattr('log.file.path', 'equalto', _mongodb_path) | list }}"
+        _severities: "{{ _mongodb | map(attribute='mongodb.severity') }}"
+        _log_ids: "{{ _mongodb | map(attribute='mongodb.log_id') }}"
+        _contexts: "{{ _mongodb | map(attribute='mongodb.context') }}"
+        _messages: "{{ _mongodb | map(attribute='mongodb.message') }}"
+        _components: "{{ _mongodb | map(attribute='mongodb.component') }}"
 
     - name: Slurp metricbeat events
       ansible.builtin.slurp:
