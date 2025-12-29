@@ -1,6 +1,8 @@
 ---
 monitoring_vector_version: "0.50.0"
 
+monitoring_script_path: /usr/local/bin/vector-check-drift
+
 monitoring_agent_location: ""
 monitoring_agent_environment: ""
 monitoring_agent_function: ""
@@ -13,9 +15,8 @@ monitoring_vector_packetbeat_port: 9203
 monitoring_vector_output_file_enable: false
 monitoring_vector_output_file_size: 52428800
 monitoring_vector_output_file_count: 7
-monitoring_vector_ntp_script_path: /usr/local/bin/vector-check-drift
-monitoring_vector_ntp_script_peer: time.cloudflare.com
-monitoring_vector_ntp_script_interval: "60"
+monitoring_vector_ntp_peer: time.cloudflare.com
+monitoring_vector_ntp_interval: "60"
 
 monitoring_legacy_enable: false
 monitoring_beat_configs:

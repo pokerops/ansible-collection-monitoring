@@ -4,10 +4,10 @@ sources:
     type: "exec"
     mode: "scheduled"
     scheduled:
-      exec_interval_secs: {{ vector_ntp_script_interval }}
+      exec_interval_secs: {{ vector_ntp_interval }}
     decoding:
       codec: "json"
-    command: [ "{{ vector_ntp_script_path }}" ]
+    command: [ "{{ vector_monitor_script_path }}" ]
 
 transforms:
   ntp_data:
