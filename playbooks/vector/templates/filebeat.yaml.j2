@@ -39,7 +39,7 @@ mysqlrouter_data:
     if match(.vectortemp.filename, r'.*mysqlrouter.log') {
       .vectortemp.grok = parse_grok!(
         string!(.message),
-        "%{DATESTAMP:timestamp} %{DATA:type} %{LOGLEVEL:level} \\[%{DATA:thread_id}\\] %{GREEDYDATA:message}"
+        "%{DATESTAMP:timestamp} %{DATA:type} %{DATA:level} \\[%{DATA:thread_id}\\] %{GREEDYDATA:message}"
       )
       .mysqlrouter.timestamp = parse_timestamp!(.vectortemp.grok.timestamp, format: "%y-%m-%d %H:%M:%S")
       .mysqlrouter.type = .vectortemp.grok.type
