@@ -1,9 +1,8 @@
 """CLI implementation for pokerops-monitoring."""
 
 import typer
-from rich.console import Console
-
 from pokerops.monitoring.ntp import app as ntp_app
+from rich.console import Console
 
 app = typer.Typer(
     name="pokerops-monitoring",

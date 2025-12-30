@@ -2,7 +2,7 @@
 name = "pokerops-monitoring"
 version = "0.0.1"
 description = "Pokerops monitoring scripts"
-readme = "README.md"
+readme = "python/README.md"
 authors = [{ name = "Ted Cook", email = "teodoro.cook@gmail.com" }]
 requires-python = ">=3.12,<3.14"
 dependencies = ["typer>=0.15.0", "rich>=13.0.0", "ntplib>=0.4.0"]
@@ -10,6 +10,10 @@ dependencies = ["typer>=0.15.0", "rich>=13.0.0", "ntplib>=0.4.0"]
 [dependency-groups]
 dev = [
   "pokerops-ansible-utils@git+https://github.com/pokerops/ansible-utils@master",
+  "pytest>=8.0.0",
+  "pytest-mock>=3.12.0",
+  "ruff>=0.8.0",
+  "pyright>=1.1.390",
 ]
 
 [project.scripts]
@@ -20,12 +24,38 @@ requires = ["uv_build>=0.9.20,<0.10.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
+module-root = "python/src"
 module-name = "pokerops.monitoring"
+source-include = ["python/tests/**"]
 
 [tool.pyright]
+include = ["python/src", "python/tests"]
 venvPath = "."
 venv = ".venv"
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
 reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
 
 [tool.ruff]
 line-length = 160
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "UP",  # pyupgrade
+]
+ignore = [
+  "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

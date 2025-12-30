@@ -1,4 +1,7 @@
 ---
+- name: Deploy monitoring tools
+  import_playbook: pokerops.monitoring.tools.install
+
 - name: Deploy Vector agent
   import_playbook: pokerops.monitoring.vector.install
 

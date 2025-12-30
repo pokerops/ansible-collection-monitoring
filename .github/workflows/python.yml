@@ -1,0 +1,23 @@
+---
+name: python
+on:
+  pull_request:
+    branches:
+      - master
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  libvirt:
+    name: libvirt
+    runs-on: libvirt
+    strategy:
+      matrix:
+        target:
+          - lint
+          - build
+          - test
+    steps:
+      - name: Run python {{ matrix.target }}
+        with:
+          run: just install {{ matrix.target}}

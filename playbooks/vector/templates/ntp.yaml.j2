@@ -7,7 +7,7 @@ sources:
       exec_interval_secs: {{ vector_ntp_interval }}
     decoding:
       codec: "json"
-    command: [ "{{ vector_monitor_script_path }}" ]
+    command: [ "{{ vector_monitor_script_path }}", "ntp", "drift" ]
 
 transforms:
   ntp_data:
