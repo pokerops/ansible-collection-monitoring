@@ -1,6 +1,54 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "dasel@latest": {
+      "last_modified": "2025-11-23T21:50:36Z",
+      "resolved": "github:NixOS/nixpkgs/ee09932cedcef15aaf476f9343d1dea2cb77e261#dasel",
+      "source": "devbox-search",
+      "version": "2.8.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/cdyi2m3793s4f2pwk386hmf4mibjc01s-dasel-2.8.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/cdyi2m3793s4f2pwk386hmf4mibjc01s-dasel-2.8.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/s8yak46drdhgzjqcfl9cy2s4ybxx0jjf-dasel-2.8.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/s8yak46drdhgzjqcfl9cy2s4ybxx0jjf-dasel-2.8.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/fb860ky944rxlmvwsx9myynd8s82xwjp-dasel-2.8.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/fb860ky944rxlmvwsx9myynd8s82xwjp-dasel-2.8.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/27dy5lbjgshlypkizc6vrhmywczdp5xd-dasel-2.8.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/27dy5lbjgshlypkizc6vrhmywczdp5xd-dasel-2.8.1"
+        }
+      }
+    },
     "expect@latest": {
       "last_modified": "2025-11-23T21:50:36Z",
       "resolved": "github:NixOS/nixpkgs/ee09932cedcef15aaf476f9343d1dea2cb77e261#expect",

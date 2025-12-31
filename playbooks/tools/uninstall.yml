@@ -1,0 +1,11 @@
+---
+- name: Uninstall pokerops python tools
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}:!{{ monitoring_exclude | default('monitoring_exclude') }}"
+  become: true
+  roles:
+    - pokerops.monitoring.monitoring
+  tasks:
+    - name: Destroy virtualenv
+      ansible.builtin.file:
+        path: "{{ monitoring_script_venv }}"
+        state: absent

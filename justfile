@@ -29,3 +29,11 @@ types *args:
 build:
   @uv --no-managed-python build
 
+# Check default values
+defaults:
+  #!/usr/bin/env bash
+  REPO_VERSION=$(dasel -f roles/monitoring/defaults/main.yml .monitoring_script_repo_version);
+  if [ "${REPO_VERSION}" != "master" ]; then
+    echo "Error: found default package version '${REPO_VERSION}', expected 'master'";
+    exit 1;
+  fi

@@ -1,5 +1,5 @@
 ---
-- name: Install and configure beat packages
+- name: Install pokerops python tools
   hosts: "{{ monitoring_clients | default('monitoring_clients') }}:!{{ monitoring_exclude | default('monitoring_exclude') }}"
   become: true
   roles:
@@ -22,5 +22,6 @@
       ansible.builtin.copy:
         dest: "{{ monitoring_script_path }}"
         content: |
-          {{ monitoring_script_venv }}/bin
+          #!/usr/bin/env bash
+          {{ monitoring_script_venv }}/bin/monitor
         mode: "u=rwx,og=rx"
