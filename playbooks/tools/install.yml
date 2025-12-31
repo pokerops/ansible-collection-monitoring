@@ -18,10 +18,10 @@
           - "git+{{ monitoring_script_repo_url }}@{{ monitoring_script_repo_version }}"
         virtualenv: "{{ monitoring_script_venv }}"
 
-    - name: Create monitoring script entrypoint
+    - name: Create monitoring script
       ansible.builtin.copy:
         dest: "{{ monitoring_script_path }}"
         content: |
           #!/usr/bin/env bash
-          {{ monitoring_script_venv }}/bin/monitor
+          {{ monitoring_script_venv }}/bin/monitor $@
         mode: "u=rwx,og=rx"

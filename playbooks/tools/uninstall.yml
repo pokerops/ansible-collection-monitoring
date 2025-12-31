@@ -9,3 +9,8 @@
       ansible.builtin.file:
         path: "{{ monitoring_script_venv }}"
         state: absent
+
+    - name: Destroy monitoring script
+      ansible.builtin.copy:
+        dest: "{{ monitoring_script_path }}"
+        state: absent
