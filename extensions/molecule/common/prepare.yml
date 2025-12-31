@@ -1,6 +1,6 @@
 ---
 - name: Prepare KVM guests
-  hosts: "rke2_server:rke2_agent"
+  hosts: "all"
   become: true
   tasks:
     - name: Update apt cache
