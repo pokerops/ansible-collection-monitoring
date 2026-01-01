@@ -32,7 +32,6 @@ jobs:
 
       - name: Run devbox tests
         uses: pokerops/ansible-utils@master
-        env:
         with:
           run: |
             make requirements test
