@@ -3,7 +3,7 @@ monitoring_vector_version: "0.50.0"
 
 monitoring_script_venv: /opt/pokerops
 monitoring_script_repo_url: "https://github.com/pokerops/ansible-collection-monitoring.git"
-monitoring_script_repo_version: "master"
+monitoring_script_repo_version: "package"
 monitoring_script_path: /usr/local/bin/monitor
 
 monitoring_agent_location: ""
