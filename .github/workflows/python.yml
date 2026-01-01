@@ -16,7 +16,7 @@ jobs:
           - build
           - test
     steps:
-      - name: Run python {{ matrix.target }}
+      - name: Run python ${{ matrix.target }}
         uses: pokerops/ansible-utils@master
         with:
-          run: just install {{ matrix.target}}
+          run: just install ${{ matrix.target}}
