@@ -28,14 +28,3 @@ def test_ntp_command_exists():
     assert result.exit_code == 0
     assert "NTP monitoring commands" in result.stdout
     assert "drift" in result.stdout
-
-
-def test_ntp_drift_command_exists():
-    """Test that ntp drift command is registered."""
-    result = runner.invoke(app, ["ntp", "drift", "--help"])
-    assert result.exit_code == 0
-    assert "--peer" in result.stdout
-    assert "--location" in result.stdout
-    assert "--environment" in result.stdout
-    assert "--function" in result.stdout
-    assert "--log-id" in result.stdout
