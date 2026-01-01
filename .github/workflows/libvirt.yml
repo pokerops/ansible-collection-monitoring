@@ -26,9 +26,11 @@ jobs:
         uses: pokerops/ansible-utils@master
         with:
           run: |
-            make configure requirements test \
-              MOLECULE_LOGDIR=${{ env.MOLECULE_LOGDIR }} \
-              MOLECULE_SCENARIO=${{ matrix.scenario }} \
+            make configure requirements test
+              GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}
+              GIT_BRANCH=${{ github.head_ref || github.ref_name }}
+              MOLECULE_LOGDIR=${{ env.MOLECULE_LOGDIR }}
+              MOLECULE_SCENARIO=${{ matrix.scenario }}
               MOLECULE_KVM_IMAGE=${{ matrix.image }}
 
       - name: Upload install logs
