@@ -23,7 +23,7 @@ sinks:
   {{ beat_name }}_elasticsearch:
     type: "elasticsearch"
     api_version: "auto"
-    inputs: [{% block sink_elastick %}"{{ beat_name }}_data"{% endblock %}]
+    inputs: [{% block sink_elastic %}"{{ beat_name }}_data"{% endblock %}]
     endpoints: [{% for host in beat_elasticsearch_hosts %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
     mode: "bulk"
     auth:
