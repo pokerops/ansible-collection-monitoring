@@ -22,13 +22,20 @@ jobs:
     env:
       MOLECULE_LOGDIR: "/tmp/logs"
     steps:
+      - name: Run make configure
+        run: make configure
+          GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}
+          GIT_BRANCH=${{ github.head_ref || github.ref_name }}
+
+      - name: Debug configuration changes
+        run: git diff
+
       - name: Run devbox tests
         uses: pokerops/ansible-utils@master
+        env:
         with:
           run: |
-            make configure requirements test
-              GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}
-              GIT_BRANCH=${{ github.head_ref || github.ref_name }}
+            make requirements test
               MOLECULE_LOGDIR=${{ env.MOLECULE_LOGDIR }}
               MOLECULE_SCENARIO=${{ matrix.scenario }}
               MOLECULE_KVM_IMAGE=${{ matrix.image }}

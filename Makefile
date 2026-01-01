@@ -3,7 +3,7 @@ export
 MOLECULE_SCENARIO ?= legacy
 MOLECULE_LOCAL_KUBECONFIG ?= $$(pwd)/.kubeconfig
 
-GIT_REPO = $(shell git config --get remote.origin.url | sed -E 's#https://github.com/##; s#^git@github.com:##; s#\.git$$##')
+GIT_REPO ?= $(shell git config --get remote.origin.url | sed -E 's#https://github.com/##; s#^git@github.com:##; s#\.git$$##')
 GIT_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 include ${MAKEFILE}
