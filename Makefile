@@ -7,8 +7,8 @@ GIT_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 include ${MAKEFILE}
 
 configure:
-	@sed -i \
-		-e 's#\(monitoring_script_repo_version:\).*#\1 "$(GIT_BRANCH)"#' \
+	@sed -iE \
+		"s#\(monitoring_script_repo_version:\).*#\1 \"${GIT_BRANCH}\"#" \
 		roles/monitoring/defaults/main.yml
 
 kubectl:

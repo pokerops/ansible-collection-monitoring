@@ -1,10 +1,8 @@
-GIT_BRANCH := `git rev-parse --abbrev-ref HEAD`
-
-make action:
-  @make {{action}}
+install:
+  make $@
 
 configure:
-  @sed -iE "s#\(monitoring_script_repo_version:\).*#\1 \"{{GIT_BRANCH}}\"#" roles/monitoring/defaults/main.yml
+  make $@
 
 requirements:
   @make 
