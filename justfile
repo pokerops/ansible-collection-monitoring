@@ -8,7 +8,7 @@ requirements:
   @make 
 
 run *args:
-  @uv --no-managed-python run pokerops-monitoring {{args}}
+  @uv --no-managed-python run python -m pokerops.monitoring {{args}}
 
 # Run all pytest checks
 test *args:
