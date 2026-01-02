@@ -11,10 +11,10 @@ app = typer.Typer(help="NTP monitoring commands")
 @app.command("drift")
 def ntp_drift_cmd(
     peer: str = typer.Option("time.cloudflare.com", help="NTP peer address"),  # pyright: ignore[reportCallInDefaultInitializer]
-    log_id: str = typer.Option("ntp-drift", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
     location: str = typer.Option("", help="Location identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
     environment: str = typer.Option("", help="Environment name"),  # pyright: ignore[reportCallInDefaultInitializer]
     function: str = typer.Option("", help="Function identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
+    log_id: str = typer.Option("ntp-drift", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
 ) -> None:
     return ntp_drift(peer, location, environment, function, log_id)
 
