@@ -36,7 +36,7 @@ pokerops-monitoring --help
 Check NTP drift from a time server:
 
 ```bash
-pokerops-monitoring ntp drift --peer time.cloudflare.com
+monitoring ntp drift --peer time.cloudflare.com
 ```
 
 **Options:**
