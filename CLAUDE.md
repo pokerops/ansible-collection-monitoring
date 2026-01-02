@@ -48,10 +48,10 @@ def feature_command(param: str):
 
 ### Integrating with Main CLI
 
-In `src/pokerops_monitoring/cli.py`, simply import and register the feature app:
+In `src/pokerops/monitoring/cli.py`, simply import and register the feature app:
 
 ```python
-from pokerops_monitoring.feature import app as feature_app
+from pokerops.monitoring.feature import app as feature_app
 
 app.add_typer(feature_app, name="feature")
 ```
@@ -59,6 +59,7 @@ app.add_typer(feature_app, name="feature")
 ### Why This Pattern?
 
 This hybrid approach combines:
+
 - The scalability of modular CLI structure (user's approach)
 - The clean separation of concerns (initial approach)
 - The reusability needed for Ansible integration
