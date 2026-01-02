@@ -3,6 +3,7 @@ import json
 import platform
 
 import ntplib
+import pokerops.monitoring.tools as tools
 import typer
 
 app = typer.Typer(help="NTP monitoring commands")
@@ -25,7 +26,7 @@ def ntp_drift(
     environment: str,
     function: str,
     log_id: str = "ntp-drift",
-):
+) -> None:
     client = ntplib.NTPClient()
     reply = client.request("time.cloudflare.com")  # pyright: ignore[reportUnknownMemberType]
     drift = {
@@ -39,10 +40,5 @@ def ntp_drift(
             "log": {"description": log_id},
         },
     }
-    log_field = {"log": {"description": log_id}}
-    location_field = {} if location == "" else {"location": location}
-    environment_field = {} if environment == "" else {"environment": environment}
-    function_field = {} if function == "" else {"function": function}
-    fields = {"fields": {**log_field, **location_field, **environment_field, **function_field}}
-    data = {**drift, **fields}
+    data = {**drift, **tools.fields(log_id, location, environment, function)}
     print(json.dumps(data))
