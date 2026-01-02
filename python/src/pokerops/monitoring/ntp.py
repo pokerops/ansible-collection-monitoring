@@ -40,5 +40,5 @@ def ntp_drift(
             "log": {"description": log_id},
         },
     }
-    data = {**drift, **tools.fields(log_id, location, environment, function)}
+    data = {**drift, **tools.fields(location, environment, function, log_id)}
     print(json.dumps(data))
