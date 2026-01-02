@@ -11,14 +11,14 @@ jobs:
   defaults:
     runs-on: ubuntu-latest
     steps:
-      - name: Run python {{ matrix.target }}
+      - name: Run defaults lint check
         uses: pokerops/ansible-utils@master
         with:
           run: just install defaults
   python:
     runs-on: ubuntu-latest
     steps:
-      - name: Run python {{ matrix.target }}
+      - name: Run python lint checks
         uses: pokerops/ansible-utils@master
         with:
           run: just install lint
