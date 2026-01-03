@@ -1,6 +1,5 @@
 import datetime
 import json
-import platform
 
 import ntplib
 import pokerops.monitoring.tools as tools
@@ -30,15 +29,17 @@ def ntp_drift(
     client = ntplib.NTPClient()
     reply = client.request("time.cloudflare.com")  # pyright: ignore[reportUnknownMemberType]
     drift = {
-        "@timestamp": datetime.datetime.fromtimestamp(reply.tx_time, datetime.UTC).isoformat(),
         "ntp_peer_address": peer,
         "ntp_peer_offset": abs(reply.offset),
-        "host": {
-            "name": platform.node(),
-        },
-        "fields": {
-            "log": {"description": log_id},
-        },
     }
-    data = {**drift, **tools.fields(location, environment, function, log_id)}
+    data = {
+        **drift,
+        **tools.metadata(
+            timestamp=datetime.datetime.fromtimestamp(reply.tx_time, datetime.UTC),
+            location=location,
+            environment=environment,
+            function=function,
+            log_id=log_id,
+        ),
+    }
     print(json.dumps(data))
