@@ -4,6 +4,7 @@
 .python-version
 
 # directories
+dist/
 .venv/
 .ansible/
 .vscode/

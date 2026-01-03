@@ -126,6 +126,14 @@ Each role has extensive configuration options. Please refer to the `defaults/mai
 - [heartbeat defaults](roles/heartbeat/defaults/main.yml)
 - [packetbeat defaults](roles/packetbeat/defaults/main.yml)
 
+## Python CLI Tool
+
+This collection includes a Python CLI tool for monitoring operations. See the [Python module README](python/README.md) for details on:
+
+- Installation and usage
+- Development and testing
+- Adding new commands
+
 ## Testing
 
 This collection uses Molecule for testing. To run tests:

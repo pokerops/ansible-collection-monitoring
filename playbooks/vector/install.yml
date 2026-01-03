@@ -43,11 +43,6 @@
       when: ansible_facts.os_family == "Debian"
       changed_when: false
 
-    - name: Install Vector dependencies
-      ansible.builtin.apt:
-        name: python3-ntplib
-        state: present
-
     - name: Create Vector service override directory
       ansible.builtin.file:
         path: /etc/systemd/system/vector.service.d
@@ -116,39 +111,6 @@
       loop: "{{ monitoring_beat_configs }}"
       notify: vector_reload
 
-    - name: Deploy Vector ntp script
-      ansible.builtin.copy:
-        dest: "{{ monitoring_vector_ntp_script_path }}"
-        content: |
-          #!/usr/bin/env python3
-
-          import ntplib
-          import json
-          from datetime import datetime, timezone
-          from time import ctime
-
-          client = ntplib.NTPClient()
-          reply = client.request("time.cloudflare.com")
-          print(json.dumps({
-              "@timestamp": datetime.fromtimestamp(reply.tx_time, timezone.utc).isoformat(),
-              "ntp_peer_address": "time.cloudflare.com",
-              "ntp_peer_offset": abs(reply.offset),
-              "host": {
-                  "name": "{{ ansible_facts.hostname }}",
-              },
-              "fields": {
-                  "location": "{{ monitoring_agent_location }}",
-                  "environment": "{{ monitoring_agent_environment }}",
-                  "function": "{{ monitoring_agent_function }}",
-                  "log": {
-                      "description": "ntp-drift"
-                  }
-              }
-          }))
-        owner: root
-        group: root
-        mode: "0755"
-
     - name: Deploy Vector ntp configuration
       ansible.builtin.template:
         src: ntp.yaml.j2
@@ -158,9 +120,12 @@
         mode: "0640"
       vars:
         vector_output_file_enable: "{{ monitoring_vector_output_file_enable }}"
-        vector_ntp_script_path: "{{ monitoring_vector_ntp_script_path }}"
-        vector_ntp_script_interval: "{{ monitoring_vector_ntp_script_interval }}"
+        vector_monitor_script_path: "{{ monitoring_script_path }}"
+        vector_ntp_interval: "{{ monitoring_vector_ntp_interval }}"
         vector_ntp_index: "{{ monitoring_elasticsearch_index_ntp }}"
+        vector_ntp_location: "{{ monitoring_agent_location }}"
+        vector_ntp_environment: "{{ monitoring_agent_environment }}"
+        vector_ntp_function: "{{ monitoring_agent_function }}"
         beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
         beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
         beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"

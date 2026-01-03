@@ -1,0 +1,22 @@
+---
+name: python
+on:
+  pull_request:
+    branches:
+      - master
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - build
+          - test
+    steps:
+      - name: Run python ${{ matrix.target }}
+        uses: pokerops/ansible-utils@master
+        with:
+          run: just install ${{ matrix.target}}
