@@ -38,3 +38,12 @@ defaults:
     echo "Error: found default package version '${REPO_VERSION}', expected 'master'";
     exit 1;
   fi
+
+version:
+  #!/usr/bin/env bash
+  ANSIBLE_VERSION=$(dasel -r yaml -f galaxy.yml .version)
+  PYTHON_VERSION=$(dasel -r toml -f pyproject.toml .project.version)
+  if [ "${ANSIBLE_VERSION}" != "${PYTHON_VERSION}" ]; then
+    echo "Python version '${PYTHON_VERSION}' and Ansible version '${ANSIBLE_VERSION}' do not match"
+    exit 1
+  fi

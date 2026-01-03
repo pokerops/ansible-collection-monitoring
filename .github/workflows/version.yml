@@ -6,5 +6,14 @@ on:
   pull_request:
     branches: ["main", "master"]
 jobs:
-  version:
+  ansible:
     uses: pokerops/ansible-utils/.github/workflows/version.yml@master
+  python:
+    name: python
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run python version check
+        uses: pokerops/ansible-utils@master
+        with:
+          run: |
+            make install version
