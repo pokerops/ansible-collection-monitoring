@@ -788,7 +788,7 @@ dependencies = [
 
 [[package]]
 name = "pokerops-monitoring"
-version = "0.0.1"
+version = "0.1.7"
 source = { editable = "." }
 dependencies = [
     { name = "ntplib" },

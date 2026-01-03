@@ -8,13 +8,6 @@ on:
 jobs:
   ansible:
     uses: pokerops/ansible-utils/.github/workflows/lint.yml@master
-  defaults:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run defaults lint check
-        uses: pokerops/ansible-utils@master
-        with:
-          run: just install defaults
   python:
     runs-on: ubuntu-latest
     steps:
