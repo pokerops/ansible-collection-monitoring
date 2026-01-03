@@ -4,8 +4,6 @@ import json
 import os
 import time
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from pokerops.monitoring.filesystem import files, filter_ctime, filter_mtime, filter_time, search
