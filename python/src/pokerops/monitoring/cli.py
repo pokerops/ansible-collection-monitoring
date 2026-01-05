@@ -1,6 +1,7 @@
 """CLI implementation for pokerops-monitoring."""
 
 import typer
+from pokerops.monitoring.filesystem import app as filesystem_app
 from pokerops.monitoring.ntp import app as ntp_app
 from rich.console import Console
 
@@ -13,6 +14,7 @@ console = Console()
 
 # NTP command group
 app.add_typer(ntp_app, name="ntp")
+app.add_typer(filesystem_app, name="filesystem")
 
 
 @app.callback(invoke_without_command=True)
