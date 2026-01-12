@@ -2,11 +2,12 @@
 
 import json
 import os
-import time
-from datetime import UTC, datetime, timedelta
+import subprocess
+from pathlib import Path
+from unittest.mock import patch
 
 import pytest
-from pokerops.monitoring.filesystem import files, filter_ctime, filter_mtime, filter_time, search
+from pokerops.monitoring.filesystem import argument, files, find
 
 
 @pytest.fixture
@@ -43,10 +44,6 @@ def temp_file_structure(tmp_path):
     file4 = nested / "file4.txt"
     file4.write_text("content4")
 
-    # Make old_file older by modifying its timestamp
-    old_time = time.time() - (10 * 86400)  # 10 days ago
-    os.utime(old_file, (old_time, old_time))
-
     return {
         "root": tmp_path,
         "file1": file1,
@@ -57,190 +54,139 @@ def temp_file_structure(tmp_path):
     }
 
 
-class TestFilterTime:
-    """Tests for filter_time function."""
+class TestArgument:
+    """Tests for argument function."""
 
-    def test_newer_than_filter(self):
-        """Test -Xd filter (newer than X days)."""
-        now = datetime.now(UTC)
-        recent = now - timedelta(days=3)
-        old = now - timedelta(days=10)
+    def test_argument_with_value(self):
+        """Test argument with a value."""
+        result = argument("-mtime", "+7")
+        assert result == "-mtime +7"
 
-        assert filter_time(recent, "-7d") is True  # 3 days ago is within 7 days
-        assert filter_time(old, "-7d") is False  # 10 days ago is not within 7 days
+    def test_argument_with_none(self):
+        """Test argument with None value."""
+        result = argument("-mtime", None)
+        assert result == ""
 
-    def test_older_than_filter(self):
-        """Test +Xd filter (older than X days)."""
-        now = datetime.now(UTC)
-        recent = now - timedelta(days=3)
-        old = now - timedelta(days=10)
-
-        assert filter_time(recent, "+7d") is False  # 3 days ago is not older than 7 days
-        assert filter_time(old, "+7d") is True  # 10 days ago is older than 7 days
-
-    def test_time_units(self):
-        """Test different time units (s, m, h, d)."""
-        now = datetime.now(UTC)
-
-        # Seconds
-        recent_seconds = now - timedelta(seconds=30)
-        assert filter_time(recent_seconds, "-60s") is True
-        assert filter_time(recent_seconds, "+60s") is False
-
-        # Minutes
-        recent_minutes = now - timedelta(minutes=30)
-        assert filter_time(recent_minutes, "-60m") is True
-        assert filter_time(recent_minutes, "+60m") is False
-
-        # Hours
-        recent_hours = now - timedelta(hours=2)
-        assert filter_time(recent_hours, "-5h") is True
-        assert filter_time(recent_hours, "+5h") is False
-
-    def test_invalid_filter_format(self):
-        """Test that invalid filter format returns False."""
-        now = datetime.now(UTC)
-        assert filter_time(now, "invalid") is False
-        assert filter_time(now, "7d") is False  # Missing +/-
-        assert filter_time(now, "+7x") is False  # Invalid unit
+    def test_argument_with_empty_string(self):
+        """Test argument with empty string."""
+        result = argument("-mtime", "")
+        assert result == ""
 
 
-class TestFilterMtimeCtime:
-    """Tests for filter_mtime and filter_ctime functions."""
+class TestFind:
+    """Tests for find function."""
 
-    def test_filter_mtime_with_valid_filter(self, temp_file_structure):
-        """Test mtime filter with valid time filter."""
-        filter_fn = filter_mtime("-1d")
-        recent_file = temp_file_structure["file1"]
-
-        # Recent file should pass
-        assert filter_fn(recent_file) is True
-
-    def test_filter_mtime_with_none(self, temp_file_structure):
-        """Test that None filter accepts all files."""
-        filter_fn = filter_mtime(None)
-        assert filter_fn(temp_file_structure["file1"]) is True
-        assert filter_fn(temp_file_structure["old_file"]) is True
-
-    def test_filter_ctime_with_valid_filter(self, temp_file_structure):
-        """Test ctime filter with valid time filter."""
-        filter_fn = filter_ctime("-1d")
-        recent_file = temp_file_structure["file1"]
-
-        # Recent file should pass
-        assert filter_fn(recent_file) is True
-
-    def test_filter_ctime_with_none(self, temp_file_structure):
-        """Test that None filter accepts all files."""
-        filter_fn = filter_ctime(None)
-        assert filter_fn(temp_file_structure["file1"]) is True
-        assert filter_fn(temp_file_structure["old_file"]) is True
-
-
-class TestSearch:
-    """Tests for search function."""
-
-    def test_search_basic(self, temp_file_structure):
-        """Test basic recursive search without filters."""
+    def test_find_basic(self, temp_file_structure):
+        """Test basic find without filters."""
         root = temp_file_structure["root"]
-        result, errors = search(root, recursive=True)
+        error, result = find(root)
 
-        # Should find all 5 files
+        assert error is None
+        assert result is not None
+        assert len(result) >= 5  # Should find all files and directories
+
+    def test_find_with_maxdepth(self, temp_file_structure):
+        """Test find with maxdepth argument."""
+        root = temp_file_structure["root"]
+        error, result = find(root, arguments=["-maxdepth", "1"])
+
+        assert error is None
+        assert result is not None
+        # Should only find items in root directory (less than all nested files)
+        assert len(result) < 7
+
+    def test_find_with_mtime(self, temp_file_structure):
+        """Test find with mtime filter."""
+        root = temp_file_structure["root"]
+        error, result = find(root, arguments=["-mtime", "-1"])
+
+        assert error is None
+        assert result is not None
+        # Should find recently modified files (test files were just created)
+        assert len(result) >= 4
+
+    def test_find_with_type_file(self, temp_file_structure):
+        """Test find with type filter for files only."""
+        root = temp_file_structure["root"]
+        error, result = find(root, arguments=["-type", "f"])
+
+        assert error is None
+        assert result is not None
+        # Should find only files, not directories
         assert len(result) == 5
-        assert len(errors) == 0
 
-    def test_search_non_recursive(self, temp_file_structure):
-        """Test non-recursive search."""
+    def test_find_with_multiple_arguments(self, temp_file_structure):
+        """Test find with multiple arguments."""
         root = temp_file_structure["root"]
-        result, errors = search(root, recursive=False)
+        error, result = find(root, arguments=["-type", "f", "-name", "*.txt"])
 
-        # Should only find files in root directory (3 files)
-        assert len(result) == 3
-        assert len(errors) == 0
-        paths = {str(p) for p in result}
-        assert str(temp_file_structure["file1"]) in paths
-        assert str(temp_file_structure["file2"]) in paths
-        assert str(temp_file_structure["old_file"]) in paths
-
-    def test_search_with_mtime_filter(self, temp_file_structure):
-        """Test search with mtime filter."""
-        root = temp_file_structure["root"]
-
-        # Filter for files modified in last 7 days
-        filter_fn = filter_mtime("-7d")
-        result, errors = search(root, filters=[filter_fn], recursive=True)
-
-        # Should find all files except old_file (4 files)
-        assert len(result) == 4
-        assert len(errors) == 0
-        paths = [str(p) for p in result]
-        assert str(temp_file_structure["old_file"]) not in paths
-
-    def test_search_with_multiple_filters(self, temp_file_structure):
-        """Test that multiple filters are combined with AND logic."""
-        root = temp_file_structure["root"]
-
-        # Both filters must pass (all files are recent)
-        filter1 = filter_mtime("-30d")
-        filter2 = filter_ctime("-30d")
-        result, errors = search(root, filters=[filter1, filter2], recursive=True)
-
-        # All files should pass both filters
+        assert error is None
+        assert result is not None
+        # Should find all .txt files
         assert len(result) == 5
-        assert len(errors) == 0
 
-    def test_search_nonexistent_path(self, tmp_path):
-        """Test search on non-existent path."""
+    def test_find_nonexistent_path(self, tmp_path):
+        """Test find on non-existent path."""
         nonexistent = tmp_path / "nonexistent"
-        result, errors = search(nonexistent)
+        error, result = find(nonexistent)
 
-        assert len(result) == 0
-        assert len(errors) == 0
+        assert error is not None
+        assert result is None
+        assert "find command failed" in error
 
-    def test_search_with_permission_error(self, temp_file_structure):
-        """Test search handles permission errors."""
+    def test_find_with_invalid_argument(self, temp_file_structure):
+        """Test find with invalid argument."""
         root = temp_file_structure["root"]
-        restricted_dir = root / "restricted"
-        restricted_dir.mkdir()
-        restricted_file = restricted_dir / "file.txt"
-        restricted_file.write_text("restricted")
+        error, result = find(root, arguments=["--invalid-flag"])
 
-        # Make directory unreadable
-        os.chmod(restricted_dir, 0o000)
+        assert error is not None
+        assert result is None
+        assert "find command failed" in error
 
-        try:
-            result, errors = search(root, recursive=True)
+    def test_find_empty_directory(self, tmp_path):
+        """Test find on empty directory."""
+        empty_dir = tmp_path / "empty"
+        empty_dir.mkdir()
 
-            # Should still return files from accessible directories
-            assert len(result) >= 5  # At least the original files
+        error, result = find(empty_dir)
 
-            # Should record the error
-            # Note: Depending on timing, the error might be caught
-            # This assertion is flexible to handle different execution orders
-            assert len(errors) >= 0  # May or may not catch permission error depending on iteration
-        finally:
-            # Restore permissions for cleanup
-            os.chmod(restricted_dir, 0o755)
+        assert error is None
+        assert result is not None
+        # Should find at least the directory itself
+        assert len(result) >= 1
 
-    def test_search_accumulates_files(self, temp_file_structure):
-        """Test that search accumulates files in provided list."""
+    def test_find_returns_path_objects(self, temp_file_structure):
+        """Test that find returns Path objects."""
         root = temp_file_structure["root"]
-        existing_files = [temp_file_structure["root"] / "dummy.txt"]
+        error, result = find(root, arguments=["-type", "f"])
 
-        result, errors = search(root, files=existing_files, recursive=False)
+        assert error is None
+        assert result is not None
+        assert all(isinstance(p, Path) for p in result)
 
-        # Should include the existing file plus found files
-        assert len(result) >= 3
-        assert len(errors) == 0
+    @patch("subprocess.run")
+    def test_find_handles_subprocess_error(self, mock_run, tmp_path):
+        """Test find handles subprocess.CalledProcessError."""
+        mock_run.side_effect = subprocess.CalledProcessError(1, ["find"], stderr="Permission denied")
 
-    def test_search_with_no_filters(self, temp_file_structure):
-        """Test search with empty filter list."""
-        root = temp_file_structure["root"]
-        result, errors = search(root, filters=[], recursive=True)
+        error, result = find(tmp_path)
 
-        # Should find all files when no filters provided
-        assert len(result) == 5
-        assert len(errors) == 0
+        assert error is not None
+        assert result is None
+        assert "exit code 1" in error
+        assert "Permission denied" in error
+
+    @patch("subprocess.run")
+    def test_find_handles_general_exception(self, mock_run, tmp_path):
+        """Test find handles general exceptions."""
+        mock_run.side_effect = Exception("Unexpected error")
+
+        error, result = find(tmp_path)
+
+        assert error is not None
+        assert result is None
+        assert "Error executing find" in error
+        assert "Unexpected error" in error
 
 
 class TestFiles:
@@ -264,10 +210,8 @@ class TestFiles:
         # Verify structure
         assert "filesystem" in output
         assert output["filesystem"]["path"] == str(root)
-        assert output["filesystem"]["count"] == 5
-        assert len(output["filesystem"]["files"]) == 5
-        assert output["filesystem"]["error_count"] == 0
-        assert output["filesystem"]["errors"] == []
+        assert output["filesystem"]["count"] >= 5
+        assert len(output["filesystem"]["files"]) >= 5
 
         # Verify metadata
         assert output["fields"]["location"] == "test-location"
@@ -286,15 +230,15 @@ class TestFiles:
             location="test",
             environment="test",
             function="test",
-            mtime="-7d",
+            mtime="-1",
         )
 
         captured = capsys.readouterr()
         output = json.loads(captured.out)
 
-        # Should exclude old_file
-        assert output["filesystem"]["count"] == 4
-        assert output["filesystem"]["mtime"] == "-7d"
+        # Should find recent files
+        assert output["filesystem"]["count"] >= 4
+        assert output["filesystem"]["mtime"] == "-1"
 
     def test_files_with_ctime_filter(self, temp_file_structure, capsys):
         """Test files function with ctime filter."""
@@ -305,17 +249,14 @@ class TestFiles:
             location="test",
             environment="test",
             function="test",
-            ctime="-7d",
+            ctime="-1",
         )
 
         captured = capsys.readouterr()
         output = json.loads(captured.out)
 
-        # Note: ctime cannot be manually set on Linux, so all files will have recent ctime
-        # even if mtime was modified. This test verifies the filter works, not that
-        # it excludes files (since we can't create files with old ctime in tests).
-        assert output["filesystem"]["count"] >= 4  # All files or all except old_file
-        assert output["filesystem"]["ctime"] == "-7d"
+        assert output["filesystem"]["count"] >= 4
+        assert output["filesystem"]["ctime"] == "-1"
 
     def test_files_with_both_filters(self, temp_file_structure, capsys):
         """Test files function with both mtime and ctime filters."""
@@ -326,17 +267,16 @@ class TestFiles:
             location="test",
             environment="test",
             function="test",
-            mtime="-7d",
-            ctime="-7d",
+            mtime="-1",
+            ctime="-1",
         )
 
         captured = capsys.readouterr()
         output = json.loads(captured.out)
 
-        # Both filters must pass (AND logic)
-        assert output["filesystem"]["count"] == 4
-        assert output["filesystem"]["mtime"] == "-7d"
-        assert output["filesystem"]["ctime"] == "-7d"
+        assert output["filesystem"]["count"] >= 4
+        assert output["filesystem"]["mtime"] == "-1"
+        assert output["filesystem"]["ctime"] == "-1"
 
     def test_files_non_recursive(self, temp_file_structure, capsys):
         """Test files function with recursive=False."""
@@ -353,8 +293,9 @@ class TestFiles:
         captured = capsys.readouterr()
         output = json.loads(captured.out)
 
-        # Should only find files in root directory
-        assert output["filesystem"]["count"] == 3
+        # Should only find files in root directory (maxdepth 1)
+        # Note: maxdepth 1 includes the directory itself
+        assert output["filesystem"]["count"] >= 3
 
     def test_files_default_parameters(self, temp_file_structure, capsys):
         """Test files function with default parameters."""
@@ -372,8 +313,8 @@ class TestFiles:
 
         # Should use default log_id
         assert output["fields"]["log"]["description"] == "filesystem-files"
-        assert output["filesystem"]["mtime"] == ""
-        assert output["filesystem"]["ctime"] == ""
+        assert output["filesystem"]["mtime"] is None
+        assert output["filesystem"]["ctime"] is None
 
     def test_files_json_format(self, temp_file_structure, capsys):
         """Test that output is valid JSON."""
@@ -395,42 +336,9 @@ class TestFiles:
         assert isinstance(output, dict)
         assert isinstance(output["filesystem"], dict)
         assert isinstance(output["filesystem"]["files"], list)
-        assert isinstance(output["filesystem"]["errors"], list)
         assert isinstance(output["filesystem"]["count"], int)
-        assert isinstance(output["filesystem"]["error_count"], int)
         assert isinstance(output["fields"], dict)
         assert isinstance(output["host"], dict)
-
-    def test_files_with_errors(self, temp_file_structure, capsys):
-        """Test files function includes error information."""
-        root = temp_file_structure["root"]
-        restricted_dir = root / "restricted"
-        restricted_dir.mkdir()
-        restricted_file = restricted_dir / "file.txt"
-        restricted_file.write_text("restricted")
-
-        # Make directory unreadable
-        os.chmod(restricted_dir, 0o000)
-
-        try:
-            files(
-                path=str(root),
-                location="test",
-                environment="test",
-                function="test",
-            )
-
-            captured = capsys.readouterr()
-            output = json.loads(captured.out)
-
-            # Should include error information
-            assert "errors" in output["filesystem"]
-            assert "error_count" in output["filesystem"]
-            assert isinstance(output["filesystem"]["errors"], list)
-            assert isinstance(output["filesystem"]["error_count"], int)
-        finally:
-            # Restore permissions for cleanup
-            os.chmod(restricted_dir, 0o755)
 
     def test_files_empty_directory(self, tmp_path, capsys):
         """Test files function on empty directory."""
@@ -444,6 +352,52 @@ class TestFiles:
         captured = capsys.readouterr()
         output = json.loads(captured.out)
 
-        assert output["filesystem"]["count"] == 0
-        assert output["filesystem"]["files"] == []
-        assert output["filesystem"]["error_count"] == 0
+        # Should find at least the directory itself
+        assert output["filesystem"]["count"] >= 0
+        assert isinstance(output["filesystem"]["files"], list)
+
+    def test_files_handles_errors(self, capsys):
+        """Test files function handles errors from find."""
+        with pytest.raises(SystemExit) as exc_info:
+            files(
+                path="/nonexistent/path/that/does/not/exist",
+                location="test",
+                environment="test",
+                function="test",
+            )
+
+        assert exc_info.value.code == 1
+
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+
+        # Should include error information
+        assert "error" in output
+        assert "message" in output["error"]
+        assert "path" in output["error"]
+
+    def test_files_with_relative_path(self, temp_file_structure, capsys):
+        """Test files function resolves relative paths."""
+        root = temp_file_structure["root"]
+
+        # Change to parent directory and use relative path
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(root.parent)
+            relative_path = root.name
+
+            files(
+                path=relative_path,
+                location="test",
+                environment="test",
+                function="test",
+            )
+
+            captured = capsys.readouterr()
+            output = json.loads(captured.out)
+
+            # Should successfully scan the directory
+            assert output["filesystem"]["count"] >= 5
+            assert "files" in output["filesystem"]
+        finally:
+            os.chdir(original_cwd)

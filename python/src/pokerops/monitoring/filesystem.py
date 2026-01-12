@@ -1,11 +1,10 @@
 import json
-import re
-from collections.abc import Callable, Iterable
-from datetime import UTC, datetime, timedelta
+import subprocess
+from collections.abc import Iterable
+from functools import reduce
 from pathlib import Path
 
 import typer
-
 from pokerops.monitoring import tools
 
 app = typer.Typer(help="Filesystem monitoring commands")
@@ -34,95 +33,42 @@ def filesystem_files_cmd(
     )
 
 
-def filter_time(t: datetime, filter: str) -> bool:
-    """Parse time filter string into seconds threshold.
+def argument(option: str, value: str | None) -> str:
+    return (value and f"{option} {value}") or ""
 
-    Format: [+/-][number][unit]
-    - Prefix: + for older than, - for newer than
-    - Units: s(seconds), m(minutes), h(hours), d(days)
 
-    Examples:
-        "-7d" -> files modified in last 7 days
-        "+1h" -> files modified more than 1 hour ago
+def find(path: Path, arguments: Iterable[str] = []) -> tuple[str | None, list[Path] | None]:
+    """Recursive filtered search for files in a directory
 
     Returns:
-        Threshold timestamp as float, or None if invalid format
+        Tuple of (error, result):
+        - On success: (None, list of matching files)
+        - On error: (error_message, None)
     """
-    match = re.match(r"^([+-])(\d+)([smhd])$", filter)
+    find_args = reduce(lambda x, y: f"{x} {y}", arguments, "")
 
-    if match:
-        direction, amount, unit = match.groups()
-        time = int(amount)
+    # Build the find command
+    command = ["find", str(path)] + [arg for arg in find_args.split() if arg]
 
-        # Convert to seconds
-        multipliers = {"s": 1, "m": 60, "h": 3600, "d": 86400}
-        delta = timedelta(seconds=time * multipliers[unit])
+    try:
+        # Execute find command
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
 
-        # Compare times
-        now = datetime.now(UTC)
-        if direction == "-":
-            return t > now - delta  # Newer than
-        else:
-            return t < now - delta  # Older than
-    return False
+        # Parse output into list of Path objects
+        files = [Path(line.strip()) for line in result.stdout.splitlines() if line.strip()]
 
+        return (None, files)
 
-def filter_file_time(time_fn: Callable[[Path], datetime], time_filter: str | None) -> Callable[[Path], bool]:
-    """Check if file time matches the filter criteria."""
-    if time_filter:
-        return lambda p: filter_time(time_fn(p), time_filter)
-    else:
-        return lambda _: True
+    except subprocess.CalledProcessError as e:
+        # Return error message as Left
+        error_msg = f"find command failed with exit code {e.returncode}"
+        if e.stderr:
+            error_msg += f": {e.stderr.strip()}"
+        return (error_msg, None)
 
-
-def filter_mtime(time_filter: str | None) -> Callable[[Path], bool]:
-    """Filter file by modification time."""
-    return filter_file_time(
-        lambda p: datetime.fromtimestamp(p.stat().st_mtime, tz=UTC),
-        time_filter,
-    )
-
-
-def filter_ctime(time_filter: str | None) -> Callable[[Path], bool]:
-    """Filter file by change time."""
-    return filter_file_time(
-        lambda p: datetime.fromtimestamp(p.stat().st_ctime, tz=UTC),
-        time_filter,
-    )
-
-
-def search(
-    path: Path,
-    files: list[Path] | None = None,
-    filters: Iterable[Callable[[Path], bool]] | None = None,
-    recursive: bool = True,
-    errors: list[dict[str, str]] | None = None,
-) -> tuple[list[Path], list[dict[str, str]]]:
-    """Recursive filtered search for files in a directory.
-
-    Returns:
-        Tuple of (matching files, errors encountered)
-    """
-    file_list = [] if files is None else files
-    error_list = [] if errors is None else errors
-    filter_list = list(filters) if filters else []
-    if path.exists():
-        try:
-            for entry in path.iterdir():
-                if entry.is_file():
-                    if not filter_list or all(f(entry) for f in filter_list):
-                        file_list.append(entry)
-                elif entry.is_dir() and recursive:
-                    search(entry, file_list, filter_list, recursive, error_list)
-        except (OSError, PermissionError) as e:
-            error_list.append(
-                {
-                    "path": str(path),
-                    "error": type(e).__name__,
-                    "message": str(e),
-                }
-            )
-    return file_list, error_list
+    except Exception as e:
+        # Catch any other exceptions (e.g., file not found)
+        return (f"Error executing find: {str(e)}", None)
 
 
 def files(
@@ -147,21 +93,43 @@ def files(
         recursive: Whether to scan recursively
         log_id: Log identifier
     """
-    file_list, error_list = search(
+    error, file_list = find(
         path=Path(path).resolve(),
-        files=[],
-        filters=(filter_mtime(mtime), filter_ctime(ctime)),
-        recursive=recursive,
+        arguments=(
+            argument("-mtime", mtime),
+            argument("-ctime", ctime),
+            argument("-maxdepth", recursive and "1" or None),
+        ),
     )
+
+    # Handle error case
+    if error is not None:
+        error_data = {
+            "error": {
+                "message": error,
+                "path": path,
+            }
+        }
+        data = {
+            **error_data,
+            **tools.metadata(
+                location=location,
+                environment=environment,
+                function=function,
+                log_id=log_id,
+            ),
+        }
+        print(json.dumps(data))
+        raise typer.Exit(code=1)
+
+    # Handle success case
     file_data = {
         "filesystem": {
             "path": path,
-            "ctime": ctime or "",
-            "mtime": mtime or "",
+            "ctime": ctime,
+            "mtime": mtime,
             "files": [str(p) for p in file_list],
             "count": len(file_list),
-            "errors": error_list,
-            "error_count": len(error_list),
         }
     }
     data = {
