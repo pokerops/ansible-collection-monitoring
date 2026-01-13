@@ -5,6 +5,8 @@ from functools import reduce
 from pathlib import Path
 
 import typer
+from rich.console import Console
+
 from pokerops.monitoring import tools
 
 app = typer.Typer(help="Filesystem monitoring commands")
@@ -122,23 +124,27 @@ def files(
         print(json.dumps(data))
         raise typer.Exit(code=1)
 
-    # Handle success case
-    file_data = {
-        "filesystem": {
-            "path": path,
-            "ctime": ctime,
-            "mtime": mtime,
-            "files": [str(p) for p in file_list],
-            "count": len(file_list),
+    if file_list is not None:
+        file_data = {
+            "filesystem": {
+                "path": path,
+                "ctime": ctime,
+                "mtime": mtime,
+                "files": [str(p) for p in file_list],
+                "count": len(file_list),
+            }
         }
-    }
-    data = {
-        **file_data,
-        **tools.metadata(
-            location=location,
-            environment=environment,
-            function=function,
-            log_id=log_id,
-        ),
-    }
-    print(json.dumps(data))
+        data = {
+            **file_data,
+            **tools.metadata(
+                location=location,
+                environment=environment,
+                function=function,
+                log_id=log_id,
+            ),
+        }
+        print(json.dumps(data))
+
+    stderr = Console(stderr=True)
+    stderr.print(f"Unexpected error occurred while scanning path: {path}")
+    raise typer.Exit(code=-1)
