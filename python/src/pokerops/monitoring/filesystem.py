@@ -98,6 +98,7 @@ def files(
     error, file_list = find(
         path=Path(path).resolve(),
         arguments=(
+            argument("-type", "f"),
             argument("-mtime", mtime),
             argument("-ctime", ctime),
             argument("-maxdepth", recursive and "1" or None),
