@@ -1,11 +1,11 @@
 install:
-  make $@
+  @make install
 
 configure:
-  make $@
+  @make configure
 
 requirements:
-  @make 
+  @make requirements 
 
 run *args:
   @uv --no-managed-python run python -m pokerops.monitoring {{args}}
