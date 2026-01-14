@@ -109,26 +109,6 @@ def files(
         ),
     )
 
-    # Handle error case
-    if error is not None:
-        error_data = {
-            "error": {
-                "message": error,
-                "path": path,
-            }
-        }
-        data = {
-            **error_data,
-            **tools.metadata(
-                location=location,
-                environment=environment,
-                function=function,
-                log_id=log_id,
-            ),
-        }
-        print(json.dumps(data))
-        raise typer.Exit(code=1)
-
     if file_list is not None:
         file_data = {
             "filesystem": {
@@ -137,6 +117,7 @@ def files(
                 "mtime": mtime,
                 "files": [str(p) for p in file_list],
                 "count": len(file_list),
+                "error": error,
             }
         }
         data = {
@@ -150,6 +131,26 @@ def files(
         }
         print(json.dumps(data))
 
+    # Handle error case
+    error_data = {
+        "filesystem": {
+            "path": path,
+            "ctime": ctime,
+            "mtime": mtime,
+            "files": [str(p) for p in (file_list or [])],
+            "error": error,
+        }
+    }
+    data = {
+        **error_data,
+        **tools.metadata(
+            location=location,
+            environment=environment,
+            function=function,
+            log_id=log_id,
+        ),
+    }
+    print(json.dumps(data))
     stderr = Console(stderr=True)
     stderr.print(f"Unexpected error occurred while scanning path: {path}")
-    raise typer.Exit(code=-1)
+    raise typer.Exit(code=1)
