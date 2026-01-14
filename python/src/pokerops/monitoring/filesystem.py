@@ -130,6 +130,7 @@ def files(
             ),
         }
         print(json.dumps(data))
+        raise typer.Exit(code=0)
 
     # Handle error case
     error_data = {
