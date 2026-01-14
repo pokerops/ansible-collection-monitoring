@@ -1,2 +1,13 @@
 ---
+- name: Drop tools virtualenv
+  hosts: all
+  become: true
+  roles:
+    - pokerops.monitoring.monitoring
+  tasks:
+    - name: Remove virtualenv directory
+      ansible.builtin.file:
+        path: "{{ monitoring_script_venv }}"
+        state: absent
+
 - import_playbook: pokerops.monitoring.install

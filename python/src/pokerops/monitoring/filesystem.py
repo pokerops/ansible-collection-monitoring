@@ -15,6 +15,7 @@ app = typer.Typer(help="Filesystem monitoring commands")
 @app.command("files")
 def filesystem_files_cmd(
     path: str = typer.Argument(help="Filesystem path to check"),
+    name: str | None = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     mtime: str | None = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer
     ctime: str | None = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     recursive: bool = typer.Option(True, help="Enable recursive search"),  # pyright: ignore[reportCallInDefaultInitializer]
@@ -25,6 +26,7 @@ def filesystem_files_cmd(
 ) -> None:
     return files(
         path=path,
+        name=name,
         mtime=mtime,
         ctime=ctime,
         recursive=recursive,
@@ -78,6 +80,7 @@ def files(
     location: str,
     environment: str,
     function: str,
+    name: str | None = None,
     mtime: str | None = None,
     ctime: str | None = None,
     recursive: bool = True,
@@ -99,6 +102,7 @@ def files(
         path=Path(path).resolve(),
         arguments=(
             argument("-type", "f"),
+            argument("-name", name),
             argument("-mtime", mtime),
             argument("-ctime", ctime),
             argument("-maxdepth", recursive and "1" or None),
