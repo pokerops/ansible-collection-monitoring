@@ -111,7 +111,7 @@
       loop: "{{ monitoring_beat_configs }}"
       notify: vector_reload
 
-    - name: Deploy Vector ntp configuration
+    - name: Deploy Vector ntp monitor configuration
       ansible.builtin.template:
         src: ntp.yaml.j2
         dest: "{{ monitoring_vector_conf_path }}/ntp.yaml"
@@ -130,6 +130,13 @@
         beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
         beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
         beat_elasticsearch_index: "{{ item.index }}"
+      notify: vector_reload
+
+    - name: Destroy Vector filesystem monitor configuration
+      ansible.builtin.file:
+        path: "{{ monitoring_vector_conf_path }}/filesystem.yaml"
+        state: "absent"
+      when: monitoring_filesystem_paths | length == 0
       notify: vector_reload
 
     - name: Validate Vector configuration

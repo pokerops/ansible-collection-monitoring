@@ -93,3 +93,5 @@ monitoring_metricbeat_conf_output:
 monitoring_heartbeat_conf_monitors: []
 monitoring_heartbeat_conf_output:
   logstash.hosts: ["localhost:{{ monitoring_vector_heartbeat_port }}"]
+
+monitoring_filesystem_paths: []
