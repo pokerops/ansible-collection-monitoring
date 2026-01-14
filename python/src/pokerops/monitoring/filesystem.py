@@ -101,11 +101,11 @@ def files(
     error, file_list = find(
         path=Path(path).resolve(),
         arguments=(
+            argument("-maxdepth", recursive and "1" or None),
             argument("-type", "f"),
             argument("-name", name),
             argument("-mtime", mtime),
             argument("-ctime", ctime),
-            argument("-maxdepth", recursive and "1" or None),
         ),
     )
 
