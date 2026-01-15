@@ -1,7 +1,6 @@
 import json
 import subprocess
 from collections.abc import Iterable
-from functools import reduce
 from pathlib import Path
 
 import typer
@@ -41,7 +40,7 @@ def argument(option: str, value: str | None) -> str:
     return (value and f"{option} {value}") or ""
 
 
-def find(path: Path, arguments: Iterable[str] = []) -> tuple[str | None, list[Path] | None]:
+def find(path: Path, arguments: Iterable[str] | None = None) -> tuple[str | None, list[Path] | None]:
     """Recursive filtered search for files in a directory
 
     Returns:
@@ -49,7 +48,8 @@ def find(path: Path, arguments: Iterable[str] = []) -> tuple[str | None, list[Pa
         - On success: (None, list of matching files)
         - On error: (error_message, None)
     """
-    find_args = reduce(lambda x, y: f"{x} {y}", arguments, "")
+    args = arguments or []
+    find_args = " ".join(args)
 
     # Build the find command
     command = ["find", str(path)] + [arg for arg in find_args.split() if arg]
@@ -93,15 +93,16 @@ def files(
         location: Location identifier
         environment: Environment name
         function: Function identifier
-        mtime: Modification time filter (e.g., "-7d", "+1h")
-        ctime: Change time filter (e.g., "-7d", "+1h")
+        name: Filename filter (e.g., "*.txt", "file.log")
+        mtime: Modification time filter in days (e.g., "-7" for within 7 days, "+1" for older than 1 day)
+        ctime: Change time filter in days (e.g., "-7" for within 7 days, "+1" for older than 1 day)
         recursive: Whether to scan recursively
         log_id: Log identifier
     """
     error, file_list = find(
         path=Path(path).resolve(),
         arguments=(
-            argument("-maxdepth", recursive and "1" or None),
+            argument("-maxdepth", "1" if not recursive else None),
             argument("-type", "f"),
             argument("-name", name),
             argument("-mtime", mtime),
@@ -130,7 +131,7 @@ def files(
             ),
         }
         print(json.dumps(data))
-        raise typer.Exit(code=0)
+        return
 
     # Handle error case
     error_data = {

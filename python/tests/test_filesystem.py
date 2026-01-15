@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import typer
 from pokerops.monitoring.filesystem import argument, files, find
 
 
@@ -358,7 +359,7 @@ class TestFiles:
 
     def test_files_handles_errors(self, capsys):
         """Test files function handles errors from find."""
-        with pytest.raises(SystemExit) as exc_info:
+        with pytest.raises(typer.Exit) as exc_info:
             files(
                 path="/nonexistent/path/that/does/not/exist",
                 location="test",
@@ -366,15 +367,16 @@ class TestFiles:
                 function="test",
             )
 
-        assert exc_info.value.code == 1
+        assert exc_info.value.exit_code == 1
 
         captured = capsys.readouterr()
         output = json.loads(captured.out)
 
         # Should include error information
-        assert "error" in output
-        assert "message" in output["error"]
-        assert "path" in output["error"]
+        assert "filesystem" in output
+        assert "error" in output["filesystem"]
+        assert output["filesystem"]["error"] is not None
+        assert "find command failed" in output["filesystem"]["error"]
 
     def test_files_with_relative_path(self, temp_file_structure, capsys):
         """Test files function resolves relative paths."""
