@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+# ruff: disable[I001]
 from pokerops.monitoring import tools
 
 app = typer.Typer(help="Filesystem monitoring commands")
