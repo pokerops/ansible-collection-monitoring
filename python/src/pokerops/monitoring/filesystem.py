@@ -4,9 +4,8 @@ from collections.abc import Iterable
 from pathlib import Path
 
 import typer
+from pokerops.monitoring import tools
 from rich.console import Console
-
-from pokerops.monitoring import tools  # noqa: I001
 
 app = typer.Typer(help="Filesystem monitoring commands")
 
