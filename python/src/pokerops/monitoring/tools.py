@@ -14,7 +14,7 @@ def metadata(
 ) -> Fields:
     if timestamp is None:
         timestamp = datetime.datetime.now(datetime.UTC)
-    timestamp_field: Field = {"@timestamp": timestamp.isoformat()}
+    timestamp_field: Field = {"timestamp": timestamp.isoformat()}
     host_field: Fields = {"host": {"name": platform.node()}}
     log_field: Fields = {"log": {"description": log_id}}
     location_field: Field = {} if location == "" else {"location": location}
