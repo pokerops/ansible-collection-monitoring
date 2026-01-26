@@ -219,7 +219,7 @@ class TestFiles:
         assert output["fields"]["environment"] == "test-env"
         assert output["fields"]["function"] == "test-function"
         assert output["fields"]["log"]["description"] == "test-log"
-        assert "@timestamp" in output
+        assert "timestamp" in output
         assert "host" in output
 
     def test_files_with_mtime_filter(self, temp_file_structure, capsys):
