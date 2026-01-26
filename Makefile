@@ -9,10 +9,10 @@ GIT_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 include ${MAKEFILE}
 
 configure:
-	@sed -iE \
+	@sed -i -e \
 		"s#\(monitoring_script_repo_url:\).*#\1 \"https://github.com/${GIT_REPO}.git\"#" \
 		roles/monitoring/defaults/main.yml
-	@sed -iE \
+	@sed -i -e \
 		"s#\(monitoring_script_repo_version:\).*#\1 \"${GIT_BRANCH}\"#" \
 		roles/monitoring/defaults/main.yml
 

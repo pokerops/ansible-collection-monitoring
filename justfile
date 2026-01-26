@@ -1,11 +1,11 @@
 install:
-  make $@
+  @make install
 
 configure:
-  make $@
+  @make configure
 
 requirements:
-  @make 
+  @make requirements 
 
 run *args:
   @uv --no-managed-python run python -m pokerops.monitoring {{args}}
@@ -38,3 +38,21 @@ defaults:
     echo "Error: found default package version '${REPO_VERSION}', expected 'master'";
     exit 1;
   fi
+
+version:
+  #!/usr/bin/env bash
+  ANSIBLE_VERSION=$(dasel -r yaml -f galaxy.yml .version | sed -e "s/^['\"]// ; s/['\"]$//")
+  PYTHON_VERSION=$(dasel -r toml -f pyproject.toml .project.version | sed -e "s/^['\"]// ; s/['\"]$//")
+  REPO_VERSION=$(dasel -f roles/monitoring/defaults/main.yml .monitoring_script_repo_version | sed -e "s/^['\"]// ; s/['\"]$//")
+  EXIT=0
+  if [ "${ANSIBLE_VERSION}" != "${PYTHON_VERSION}" ]; then
+    echo "Python version '${PYTHON_VERSION}' and Ansible version '${ANSIBLE_VERSION}' do not match"
+    EXIT=1
+  fi
+  if [ "${PYTHON_VERSION}" != "${REPO_VERSION}" ]; then
+    echo "Module target '${REPO_VERSION}' and Python version '${PYTHON_VERSION}' do not match"
+    EXIT=1
+  fi
+  sed -i -e "s/^\(version:\).*$/\1 ${ANSIBLE_VERSION}/" pyproject.toml
+  sed -i -e "s/^\(monitoring_script_repo_version:\).*/\1 ${ANSIBLE_VERSION}/" roles/monitoring/defaults/main.yml
+  exit ${EXIT}

@@ -3,7 +3,7 @@ monitoring_vector_version: "0.50.0"
 
 monitoring_script_venv: /opt/pokerops
 monitoring_script_repo_url: "https://github.com/pokerops/ansible-collection-monitoring.git"
-monitoring_script_repo_version: "master"
+monitoring_script_repo_version: 0.1.7
 monitoring_script_path: /usr/local/bin/monitor
 
 monitoring_agent_location: ""
@@ -40,6 +40,7 @@ monitoring_elasticsearch_index_filebeat: filebeat
 monitoring_elasticsearch_index_metricbeat: metricbeat
 monitoring_elasticsearch_index_heartbeat: heartbeat
 monitoring_elasticsearch_index_ntp: ntp
+monitoring_elasticsearch_index_filesystem: filesystem
 
 monitoring_beats_package_state: present
 monitoring_beats_conf_setup:
@@ -93,3 +94,5 @@ monitoring_metricbeat_conf_output:
 monitoring_heartbeat_conf_monitors: []
 monitoring_heartbeat_conf_output:
   logstash.hosts: ["localhost:{{ monitoring_vector_heartbeat_port }}"]
+
+monitoring_filesystem_checks: []

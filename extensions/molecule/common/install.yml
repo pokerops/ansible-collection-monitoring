@@ -1,2 +1,32 @@
 ---
+- name: Drop tools virtualenv
+  hosts: all
+  become: true
+  roles:
+    - pokerops.monitoring.monitoring
+  tasks:
+    - name: Remove virtualenv directory
+      ansible.builtin.file:
+        path: "{{ monitoring_script_venv }}"
+        state: absent
+
+    - name: Drop molecule tempdirs
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ molecule_tmpdir }}"
+
+    - name: Create tempdir directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "uog=rwx"
+      loop: "{{ molecule_tmpdir }}"
+
+    - name: Create tempdir files
+      ansible.builtin.file:
+        path: "{{ item }}/test.txt"
+        state: touch
+      loop: "{{ molecule_tmpdir }}"
+
 - import_playbook: pokerops.monitoring.install

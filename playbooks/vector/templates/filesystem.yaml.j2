@@ -1,38 +1,45 @@
 ---
 sources:
-  ntp_check:
+{% for fs in vector_filesystem_checks %}
+  filesystem_check_{{ loop.index0 }}:
     type: "exec"
     mode: "scheduled"
     scheduled:
-      exec_interval_secs: {{ vector_ntp_interval }}
+      exec_interval_secs: {{ fs.interval | default(3600) }}
     decoding:
       codec: "json"
     command: [
       "{{ vector_monitor_script_path }}",
-      "ntp",
-      "drift",
-      "--location {{ vector_ntp_location }}",
-      "--environment {{ vector_ntp_environment}}",
-      "--function {{ vector_ntp_function }}"
+      "filesystem",
+      "files",
+      "--location {{ vector_filesystem_location }}",
+      "--environment {{ vector_filesystem_environment}}",
+      "--function {{ vector_filesystem_function }}",
+      "--ctime {{ fs.ctime | default(-1) }}",
+      {% if 'mtime' in fs %}
+        "--mtime {{ fs.mtime }}",
+      {% endif %}
+      {% if 'recursive' in fs and fs.recursive %}
+        "--recursive",
+      {% endif %}
+      "{{ fs.path }}"
     ]
+{% endfor %}
 
 transforms:
-  ntp_data:
+  filesystem_data:
     type: "remap"
-    inputs: ["ntp_check"]
+    inputs: ["filesystem_check_*"]
     source: |
       # Convert server_time to ISO8601 format
       .@timestamp = parse_timestamp!(.timestamp, format: "%+")
 
-      # Convert ntp_peer_offset is a float
-      .ntp_peer_offset = to_float!(.ntp_peer_offset)
-
 sinks:
 {% if beat_elasticsearch_hosts | length > 0 %}
-  ntp_elasticsearch:
+  filesystem_elasticsearch:
     type: "elasticsearch"
     api_version: "auto"
-    inputs: ["ntp_data"]
+    inputs: ["filesystem_data"]
     endpoints: [{% for host in beat_elasticsearch_hosts %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
     mode: "bulk"
     auth:
@@ -40,16 +47,16 @@ sinks:
       user: "{{ beat_elasticsearch_username }}"
       password: "{{ beat_elasticsearch_password }}"
     bulk:
-      index: "{{ vector_ntp_index }}"
+      index: "{{ vector_filesystem_index }}"
     encoding:
       timestamp_format: "rfc3339"
 {%- endif %}
 
 {% if vector_output_file_enable %}
-  ntp_file:
+  filesystem_file:
     type: "file"
-    inputs: ["ntp_data"]
-    path: "/var/log/vector/ntp.log"
+    inputs: ["filesystem_data"]
+    path: "/var/log/vector/filesystem.log"
     encoding:
       codec: "json"
       timestamp_format: "rfc3339"

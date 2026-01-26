@@ -91,7 +91,7 @@
         - "{{ monitoring_vector_conf_path }}/examples"
       notify: vector_reload
 
-    - name: Deploy Vector beat configurations
+    - name: Deploy Vector beat monitor configuration
       ansible.builtin.template:
         src: "{{ beat_name }}.yaml.j2"
         dest: "{{ monitoring_vector_conf_path }}/{{ beat_name }}.yaml"
@@ -111,7 +111,7 @@
       loop: "{{ monitoring_beat_configs }}"
       notify: vector_reload
 
-    - name: Deploy Vector ntp configuration
+    - name: Deploy Vector ntp monitor configuration
       ansible.builtin.template:
         src: ntp.yaml.j2
         dest: "{{ monitoring_vector_conf_path }}/ntp.yaml"
@@ -126,6 +126,34 @@
         vector_ntp_location: "{{ monitoring_agent_location }}"
         vector_ntp_environment: "{{ monitoring_agent_environment }}"
         vector_ntp_function: "{{ monitoring_agent_function }}"
+        beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
+        beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
+        beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
+        beat_elasticsearch_index: "{{ item.index }}"
+      notify: vector_reload
+
+    - name: Destroy Vector filesystem monitor configuration
+      ansible.builtin.file:
+        path: "{{ monitoring_vector_conf_path }}/filesystem.yaml"
+        state: "absent"
+      when: monitoring_filesystem_checks | length == 0
+      notify: vector_reload
+
+    - name: Deploy Vector filesystem monitor configuration
+      ansible.builtin.template:
+        src: filesystem.yaml.j2
+        dest: "{{ monitoring_vector_conf_path }}/filesystem.yaml"
+        owner: vector
+        group: vector
+        mode: "0640"
+      vars:
+        vector_output_file_enable: "{{ monitoring_vector_output_file_enable }}"
+        vector_monitor_script_path: "{{ monitoring_script_path }}"
+        vector_filesystem_index: "{{ monitoring_elasticsearch_index_filesystem }}"
+        vector_filesystem_location: "{{ monitoring_agent_location }}"
+        vector_filesystem_environment: "{{ monitoring_agent_environment }}"
+        vector_filesystem_function: "{{ monitoring_agent_function }}"
+        vector_filesystem_checks: "{{ monitoring_filesystem_checks }}"
         beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
         beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
         beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"

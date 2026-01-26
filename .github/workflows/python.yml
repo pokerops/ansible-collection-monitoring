@@ -13,6 +13,7 @@ jobs:
     strategy:
       matrix:
         target:
+          - types
           - build
           - test
     steps:

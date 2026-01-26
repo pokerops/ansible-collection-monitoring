@@ -1,6 +1,6 @@
 [project]
 name = "pokerops-monitoring"
-version = "0.0.1"
+version = "0.1.7"
 description = "Pokerops monitoring scripts"
 readme = "python/README.md"
 authors = [{ name = "Ted Cook", email = "teodoro.cook@gmail.com" }]
@@ -32,6 +32,7 @@ source-include = ["python/tests/**"]
 include = ["python/src", "python/tests"]
 venvPath = "."
 venv = ".venv"
+exclude = [".venv"]
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
 reportMissingTypeStubs = false
