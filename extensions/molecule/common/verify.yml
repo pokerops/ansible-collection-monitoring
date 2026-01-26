@@ -144,24 +144,10 @@
       ansible.builtin.assert:
         that:
           - _filesystem_events | length > 0
-          - _filesystem_paths | length == 1
-          - _filesystem_paths | first is search(_monitored_path)
-        success_msg: "{{ _filesystem_events | length }} filesystem events found for monitored path"
-        fail_msg: "{{ _filesystem_events | length }} filesystem events found for monitored path"
-      vars:
-        _monitored_path: "{{ molecule_tmpdir }}"
-        _filesystem_events: "{{ filesystem_events | selectattr('filesystem.path', 'search', _monitored_path) | list }}"
-        _filesystem_paths: "{{ _filesystem_events | map(attribute='filesystem.path') | unique }}"
-
-    - name: Verify filesystem monitor events
-      ansible.builtin.assert:
-        that:
-          - _filesystem_events | length > 0
           - _filesystem_paths | length == 2
           - _filesystem_paths | difference(molecule_tmpdir) | length == 0
-        success_msg: "{{ _filesystem_events | length }} filesystem events found for monitored path"
-        fail_msg: "{{ _filesystem_events | length }} filesystem events found for monitored path"
+        success_msg: "{{ _filesystem_events | length }} filesystem events found for monitored paths"
+        fail_msg: "{{ _filesystem_events | length }} filesystem events found for monitored paths"
       vars:
-        _monitored_path: "{{ molecule_tmpdir }}"
-        _filesystem_events: "{{ filesystem_events | selectattr('filesystem.path', 'search', _monitored_path) | list }}"
+        _filesystem_events: "{{ filesystem_events }}"
         _filesystem_paths: "{{ _filesystem_events | map(attribute='filesystem.path') | unique }}"
