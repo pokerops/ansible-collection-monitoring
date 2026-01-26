@@ -43,6 +43,7 @@ provisioner:
           molecule_install_dir: "{{ lookup('ansible.builtin.env', 'MOLECULE_OUTPUT_DIR', default='/tmp/logs') }}"
           molecule_install_log: "{{ molecule_install_dir }}/${MOLECULE_SCENARIO_NAME}"
           molecule_local_kubeconfig: "{{ lookup('ansible.builtin.env', 'MOLECULE_LOCAL_KUBECONFIG') }}"
+          molecule_tmpdir: /tmp/molecule
           # RKE2 params
           rke2_cluster_name: opensearch.pokerops.net
           rke2_ippool_private: "{{ molecule_pool_private }}"
@@ -103,6 +104,8 @@ provisioner:
               id: mysqlrouter
               paths:
                 - "/var/log/mysqlrouter/mysqlrouter.log"
+          monitoring_filesystem_checks:
+            - path: "{{ molecule_tmpdir }}"
 verifier:
   name: ansible
 scenario:
