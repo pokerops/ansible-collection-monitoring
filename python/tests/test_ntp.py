@@ -45,7 +45,7 @@ def test_ntp_drift_success(mock_ntp_response, capsys):
         assert output["fields"]["environment"] == "test-env"
         assert output["fields"]["function"] == "test-function"
         assert output["fields"]["log"]["description"] == "test-log"
-        assert "@timestamp" in output
+        assert "timestamp" in output
         assert "host" in output
         assert "name" in output["host"]
 
