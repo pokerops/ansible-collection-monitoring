@@ -10,14 +10,23 @@
         path: "{{ monitoring_script_venv }}"
         state: absent
 
-    - name: Drop molecule tempdir
+    - name: Drop molecule tempdirs
       ansible.builtin.file:
-        path: "{{ molecule_tmpdir }}"
+        path: "{{ item }}"
         state: absent
+      loop: "{{ molecule_tmpdir }}"
 
-    - name: Create tempdir file
+    - name: Create tempdir directories
       ansible.builtin.file:
-        path: "{{ molecule_tmpdir }}/test.txt"
+        path: "{{ item }}"
+        state: directory
+        mode: "uog=rwx"
+      loop: "{{ molecule_tmpdir }}"
+
+    - name: Create tempdir files
+      ansible.builtin.file:
+        path: "{{ item }}/test.txt"
         state: touch
+      loop: "{{ molecule_tmpdir }}"
 
 - import_playbook: pokerops.monitoring.install

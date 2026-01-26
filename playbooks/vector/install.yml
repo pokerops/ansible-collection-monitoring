@@ -136,7 +136,7 @@
       ansible.builtin.file:
         path: "{{ monitoring_vector_conf_path }}/filesystem.yaml"
         state: "absent"
-      when: monitoring_filesystem_paths | length == 0
+      when: monitoring_filesystem_checks | length == 0
       notify: vector_reload
 
     - name: Deploy Vector filesystem monitor configuration
