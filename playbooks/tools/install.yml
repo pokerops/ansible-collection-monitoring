@@ -5,12 +5,11 @@
   roles:
     - pokerops.monitoring.monitoring
   tasks:
-    - name: Install virtualenv package
-      ansible.builtin.apt:
-        name: virtualenv
-        state: present
-      when: ansible_facts.os_family == "Debian"
-      changed_when: false
+    - name: Install virtualenv packages
+      ansible.builtin.package:
+        name:
+          - virtualenv
+          - git
 
     - name: Initialize virtualenv
       ansible.builtin.pip:
