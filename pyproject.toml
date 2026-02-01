@@ -23,6 +23,9 @@ monitor = "pokerops.monitoring.cli:app"
 requires = ["uv_build>=0.9.20,<0.10.0"]
 build-backend = "uv_build"
 
+[tool.uv.dependency-groups]
+dev = { requires-python = ">=3.12" }
+
 [tool.uv.build-backend]
 module-root = "python/src"
 module-name = "pokerops.monitoring"
