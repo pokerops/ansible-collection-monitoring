@@ -1,9 +1,5 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
   "include": ["github:pokerops/ansible-utils?dir=devbox/molecule"],
-  "packages": [
-    "just@latest",
-    "uv@latest",
-    "dasel@latest"
-  ]
+  "packages": ["python@3.8", "just@latest", "uv@latest", "dasel@latest"]
 }
