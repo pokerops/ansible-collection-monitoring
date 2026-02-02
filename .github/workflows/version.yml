@@ -9,7 +9,6 @@ jobs:
   ansible:
     uses: pokerops/ansible-utils/.github/workflows/version.yml@master
   python:
-    name: python
     runs-on: ubuntu-latest
     steps:
       - name: Run python version check
@@ -17,8 +16,14 @@ jobs:
         with:
           run: |
             make install version
+  consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run version consistency check
+        uses: pokerops/ansible-utils@master
+        with:
+          run: just install version
   tag:
-    name: python
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -33,7 +38,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-      - name: Check if tag exists
+      - name: Check whether tag exists
         id: check_tag
         run: |
           if git rev-parse "refs/tags/${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
