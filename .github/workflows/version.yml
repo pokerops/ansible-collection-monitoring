@@ -22,7 +22,7 @@ jobs:
       - name: Run version consistency check
         uses: pokerops/ansible-utils@master
         with:
-          run: just install version-check
+          run: just install version
   tag:
     runs-on: ubuntu-latest
     steps:
