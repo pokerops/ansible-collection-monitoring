@@ -158,6 +158,7 @@
         beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
         beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
         beat_elasticsearch_index: "{{ item.index }}"
+      when: monitoring_filesystem_checks | length > 0
       notify: vector_reload
 
     - name: Validate Vector configuration
