@@ -4,9 +4,8 @@ from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
 import typer
-from rich.console import Console
-
 from pokerops.monitoring import tools
+from rich.console import Console
 
 app = typer.Typer(help="Filesystem monitoring commands")
 
