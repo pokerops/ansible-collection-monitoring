@@ -23,7 +23,7 @@ format *args:
   @uv --no-managed-python run ruff format {{args}} python/src python/tests
 
 # Type check with pyright
-pyright *args:
+types *args:
   @uv --no-managed-python run pyright {{args}}
 
 # Run nox (all sessions) - uv manages Python versions
