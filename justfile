@@ -26,6 +26,18 @@ format *args:
 types *args:
   @uv --no-managed-python run pyright {{args}}
 
+# Run nox (all sessions) - uv manages Python versions
+nox *args='-p':
+  @uv run nox {{args}}
+
+# List nox sessions
+nox-list:
+  @uv run nox --list
+
+# Run nox test session (default: all tests in parallel)
+nox-test session='tests -p':
+  @uv run nox -s {{session}}
+
 # Build the package
 build:
   @uv --no-managed-python build

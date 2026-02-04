@@ -15,7 +15,7 @@ jobs:
         target:
           - types
           - build
-          - test
+          - nox
     steps:
       - name: Run python ${{ matrix.target }}
         uses: pokerops/ansible-utils@master

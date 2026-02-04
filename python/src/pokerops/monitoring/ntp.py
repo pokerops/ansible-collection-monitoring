@@ -35,7 +35,7 @@ def ntp_drift(
     data = {
         **drift,
         **tools.metadata(
-            timestamp=datetime.datetime.fromtimestamp(reply.tx_time, datetime.UTC),
+            timestamp=datetime.datetime.fromtimestamp(reply.tx_time, datetime.timezone.utc),
             location=location,
             environment=environment,
             function=function,
