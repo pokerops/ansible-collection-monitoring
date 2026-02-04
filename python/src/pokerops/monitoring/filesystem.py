@@ -1,11 +1,12 @@
 import json
 import subprocess
-from collections.abc import Iterable
 from pathlib import Path
+from typing import Iterable, List, Optional, Tuple
 
 import typer
-from pokerops.monitoring import tools
 from rich.console import Console
+
+from pokerops.monitoring import tools
 
 app = typer.Typer(help="Filesystem monitoring commands")
 
@@ -13,9 +14,9 @@ app = typer.Typer(help="Filesystem monitoring commands")
 @app.command("files")
 def filesystem_files_cmd(
     path: str = typer.Argument(help="Filesystem path to check"),
-    name: str | None = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
-    mtime: str | None = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer
-    ctime: str | None = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    name: Optional[str] = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    mtime: Optional[str] = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    ctime: Optional[str] = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     recursive: bool = typer.Option(True, help="Enable recursive search"),  # pyright: ignore[reportCallInDefaultInitializer]
     log_id: str = typer.Option("filesystem-files", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
     location: str = typer.Option("", help="Location identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
@@ -35,11 +36,11 @@ def filesystem_files_cmd(
     )
 
 
-def argument(option: str, value: str | None) -> str:
+def argument(option: str, value: Optional[str]) -> str:
     return (value and f"{option} {value}") or ""
 
 
-def find(path: Path, arguments: Iterable[str] | None = None) -> tuple[str | None, list[Path] | None]:
+def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Path]]]:
     """Recursive filtered search for files in a directory
 
     Returns:
@@ -79,9 +80,9 @@ def files(
     location: str,
     environment: str,
     function: str,
-    name: str | None = None,
-    mtime: str | None = None,
-    ctime: str | None = None,
+    name: Optional[str] = None,
+    mtime: Optional[str] = None,
+    ctime: Optional[str] = None,
     recursive: bool = True,
     log_id: str = "filesystem-files",
 ) -> None:

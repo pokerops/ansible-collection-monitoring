@@ -23,8 +23,20 @@ format *args:
   @uv --no-managed-python run ruff format {{args}} python/src python/tests
 
 # Type check with pyright
-types *args:
+pyright *args:
   @uv --no-managed-python run pyright {{args}}
+
+# Run nox (all sessions) - uv manages Python versions
+nox *args='-p':
+  @uv run nox {{args}}
+
+# List nox sessions
+nox-list:
+  @uv run nox --list
+
+# Run nox test session (default: all tests in parallel)
+nox-test session='tests -p':
+  @uv run nox -s {{session}}
 
 # Build the package
 build:
