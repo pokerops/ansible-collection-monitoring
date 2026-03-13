@@ -41,41 +41,58 @@ def argument(option: str, value: Optional[str]) -> str:
     return (value and f"{option} {value}") or ""
 
 
-def find(
-    path: Path,
-    arguments: Optional[Iterable[str]] = None
-) -> Tuple[Optional[str], Optional[List[Tuple[Path, int]]]]:
+def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Tuple[Path, int]]]]:
 
     args = arguments or []
     find_args = [arg for arg in " ".join(args).split() if arg]
 
-    # First try GNU find (fastest)
     command = ["find", str(path)] + find_args + ["-printf", "%p|%s\n"]
 
     try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
 
-        files = []
+        files: List[Tuple[Path, int]] = []
+
         for line in result.stdout.splitlines():
             if not line.strip():
                 continue
+
             p, size = line.split("|", 1)
             files.append((Path(p), int(size)))
 
         return (None, files)
 
     except subprocess.CalledProcessError:
-        # Fallback portable implementation
-        command = ["find", str(path)] + find_args
+        # Try portable fallback without -printf
+        try:
+            command = ["find", str(path)] + find_args
 
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
 
-        files = []
-        for line in result.stdout.splitlines():
-            p = Path(line.strip())
-            files.append((p, p.stat().st_size))
+            files: List[Tuple[Path, int]] = []
 
-        return (None, files)
+            for line in result.stdout.splitlines():
+                p = Path(line.strip())
+                files.append((p, p.stat().st_size))
+
+            return (None, files)
+
+        except subprocess.CalledProcessError as e2:
+            error = f"find command failed (exit code {e2.returncode}): {e2.stderr.strip()}"
+            return (error, None)
+
+    except Exception as e:
+        return (f"Error executing find: {str(e)}", None)
 
 
 def files(
@@ -121,13 +138,7 @@ def files(
                 "path": path,
                 "ctime": ctime,
                 "mtime": mtime,
-                "files": [
-                    {
-                        "path": str(p),
-                        "size": p.stat().st_size
-                    }
-                    for p in file_list
-                ],
+                "files": [{"path": str(p), "size": size} for p, size in file_list],
                 "count": len(file_list),
                 "error": error,
             }
@@ -150,7 +161,7 @@ def files(
             "path": path,
             "ctime": ctime,
             "mtime": mtime,
-            "files": [str(p) for p in (file_list or [])],
+            "files": [{"path": str(p), "size": size} for p, size in (file_list or [])],
             "error": error,
         }
     }

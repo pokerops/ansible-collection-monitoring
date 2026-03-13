@@ -84,7 +84,12 @@ class TestFind:
 
         assert error is None
         assert result is not None
-        assert len(result) >= 5  # Should find all files and directories
+        assert len(result) >= 5
+
+        # Validate tuple structure
+        p, size = result[0]
+        assert isinstance(p, Path)
+        assert isinstance(size, int)
 
     def test_find_with_maxdepth(self, temp_file_structure):
         """Test find with maxdepth argument."""
@@ -157,13 +162,14 @@ class TestFind:
         assert len(result) >= 1
 
     def test_find_returns_path_objects(self, temp_file_structure):
-        """Test that find returns Path objects."""
+        """Test that find returns (Path, size) tuples."""
         root = temp_file_structure["root"]
         error, result = find(root, arguments=["-type", "f"])
 
         assert error is None
         assert result is not None
-        assert all(isinstance(p, Path) for p in result)
+
+        assert all(isinstance(p, Path) and isinstance(size, int) for p, size in result)
 
     @patch("subprocess.run")
     def test_find_handles_subprocess_error(self, mock_run, tmp_path):
@@ -213,7 +219,12 @@ class TestFiles:
         assert output["filesystem"]["path"] == str(root)
         assert output["filesystem"]["count"] >= 5
         assert len(output["filesystem"]["files"]) >= 5
+        first_file = output["filesystem"]["files"][0]
 
+        assert "path" in first_file
+        assert "size" in first_file
+        assert isinstance(first_file["path"], str)
+        assert isinstance(first_file["size"], int)
         # Verify metadata
         assert output["fields"]["location"] == "test-location"
         assert output["fields"]["environment"] == "test-env"
