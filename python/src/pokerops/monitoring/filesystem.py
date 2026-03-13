@@ -1,7 +1,7 @@
 import json
 import subprocess
 from pathlib import Path
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, list, Optional, tuple
 
 import typer
 from pokerops.monitoring import tools
@@ -41,11 +41,11 @@ def argument(option: str, value: Optional[str]) -> str:
     return ""
 
 
-def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Path]]]:
+def find(path: Path, arguments: Optional[Iterable[str]] = None) -> tuple[Optional[str], Optional[list[Path]]]:
     """Recursive filtered search for files in a directory
 
     Returns:
-        Tuple of (error, result):
+        tuple of (error, result):
         - On success: (None, list of matching files)
         - On error: (error_message, None)
     """
@@ -95,7 +95,7 @@ def files(
         recursive: Whether to scan recursively
         log_id: Log identifier
     """
-    args: List[str] = [
+    args: list[str] = [
         argument("-maxdepth", "1" if not recursive else None),
         argument("-type", "f"),
         argument("-name", name),
@@ -112,7 +112,7 @@ def files(
 
     file_list = file_list or []
 
-    files_info: List[dict] = []
+    files_info: list[dict] = []
     total_size = 0
     newest: Optional[float] = None
     oldest: Optional[float] = None
