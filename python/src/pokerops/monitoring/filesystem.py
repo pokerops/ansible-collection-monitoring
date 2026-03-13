@@ -49,7 +49,7 @@ def find(path: Path, arguments: Iterable[str] | None = None) -> tuple[str | None
         - On success: (None, list of matching files)
         - On error: (error_message, None)
     """
-    args = arguments or []
+    args = list(arguments or [])
     find_args = " ".join(args)
 
     command = ["find", str(path)] + [arg for arg in find_args.split() if arg]
@@ -110,7 +110,7 @@ def files(
         arguments=args,
     )
 
-    file_list = file_list or []
+    files_info: list[dict[str, object]] = []
 
     files_info: list[dict] = []
     total_size = 0
