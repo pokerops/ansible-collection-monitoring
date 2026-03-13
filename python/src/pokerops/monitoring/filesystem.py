@@ -1,7 +1,7 @@
 import json
 import subprocess
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, List, Optional, Tuple
 
 import typer
 from pokerops.monitoring import tools
@@ -13,9 +13,9 @@ app = typer.Typer(help="Filesystem monitoring commands")
 @app.command("files")
 def filesystem_files_cmd(
     path: str = typer.Argument(help="Filesystem path to check"),
-    name: str | None = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
-    mtime: str | None = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
-    ctime: str | None = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    name: Optional[str] = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    mtime: Optional[str] = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    ctime: Optional[str] = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     recursive: bool = typer.Option(True, help="Enable recursive search"),  # pyright: ignore[reportCallInDefaultInitializer]
     log_id: str = typer.Option("filesystem-files", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
     location: str = typer.Option("", help="Location identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
@@ -35,36 +35,42 @@ def filesystem_files_cmd(
     )
 
 
-def argument(option: str, value: str | None) -> list[str]:
-    if value:
-        return [option, value]
-    return []
+def argument(option: str, value: Optional[str]) -> str:
+    return (value and f"{option} {value}") or ""
 
 
-def find(path: Path, arguments: Iterable[str] | None = None) -> tuple[str | None, list[Path] | None]:
+def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Path]]]:
     """Recursive filtered search for files in a directory
 
     Returns:
-        tuple of (error, result):
+        Tuple of (error, result):
         - On success: (None, list of matching files)
         - On error: (error_message, None)
     """
-    command = ["find", str(path), *(arguments or [])]
+    args = arguments or []
+    find_args = " ".join(args)
+
+    # Build the find command
+    command = ["find", str(path)] + [arg for arg in find_args.split() if arg]
 
     try:
+        # Execute find command
         result = subprocess.run(command, capture_output=True, text=True, check=True)
 
+        # Parse output into list of Path objects
         files = [Path(line.strip()) for line in result.stdout.splitlines() if line.strip()]
 
         return (None, files)
 
     except subprocess.CalledProcessError as e:
+        # Return error message as Left
         error_msg = f"find command failed with exit code {e.returncode}"
         if e.stderr:
             error_msg += f": {e.stderr.strip()}"
         return (error_msg, None)
 
     except Exception as e:
+        # Catch any other exceptions (e.g., file not found)
         return (f"Error executing find: {str(e)}", None)
 
 
@@ -73,9 +79,9 @@ def files(
     location: str,
     environment: str,
     function: str,
-    name: str | None = None,
-    mtime: str | None = None,
-    ctime: str | None = None,
+    name: Optional[str] = None,
+    mtime: Optional[str] = None,
+    ctime: Optional[str] = None,
     recursive: bool = True,
     log_id: str = "filesystem-files",
 ) -> None:
@@ -92,72 +98,52 @@ def files(
         recursive: Whether to scan recursively
         log_id: Log identifier
     """
-    args: list[str] = [
-        *argument("-maxdepth", "1" if not recursive else None),
-        "-type", "f",
-        *argument("-name", name),
-        *argument("-mtime", mtime),
-        *argument("-ctime", ctime),
-    ]
-
     error, file_list = find(
         path=Path(path).resolve(),
-        arguments=args,
+        arguments=(
+            argument("-maxdepth", "1" if not recursive else None),
+            argument("-type", "f"),
+            argument("-name", name),
+            argument("-mtime", mtime),
+            argument("-ctime", ctime),
+        ),
     )
 
-    file_list = file_list or []
+    if file_list is not None:
+        file_data = {
+            "filesystem": {
+                "path": path,
+                "ctime": ctime,
+                "mtime": mtime,
+                "files": [str(p) for p in file_list],
+                "count": len(file_list),
+                "error": error,
+            }
+        }
+        data = {
+            **file_data,
+            **tools.metadata(
+                location=location,
+                environment=environment,
+                function=function,
+                log_id=log_id,
+            ),
+        }
+        print(json.dumps(data))
+        return
 
-    files_info: list[dict[str, object]] = []
-
-    total_size = 0
-    newest: float | None = None
-    oldest: float | None = None
-
-    for p in file_list:
-        try:
-            stat = p.stat()
-
-            size = stat.st_size
-            file_mtime = stat.st_mtime
-            file_ctime = stat.st_ctime
-
-            files_info.append(
-                {
-                    "path": str(p),
-                    "name": p.name,
-                    "size_bytes": size,
-                    "mtime": file_mtime,
-                    "ctime": file_ctime,
-                }
-            )
-
-            total_size += size
-
-            if newest is None or file_mtime > newest:
-                newest = file_mtime
-
-            if oldest is None or file_mtime < oldest:
-                oldest = file_mtime
-
-        except Exception:
-            continue
-
-    file_data = {
+    # Handle error case
+    error_data = {
         "filesystem": {
             "path": path,
             "ctime": ctime,
             "mtime": mtime,
-            "files": files_info,
-            "count": len(files_info),
-            "size_bytes": total_size,
-            "newest_file_timestamp": newest or 0,
-            "oldest_file_timestamp": oldest or 0,
+            "files": [str(p) for p in (file_list or [])],
             "error": error,
         }
     }
-
     data = {
-        **file_data,
+        **error_data,
         **tools.metadata(
             location=location,
             environment=environment,
@@ -165,10 +151,7 @@ def files(
             log_id=log_id,
         ),
     }
-
     print(json.dumps(data))
-
-    if error:
-        stderr = Console(stderr=True)
-        stderr.print(f"Unexpected error occurred while scanning path: {path}")
-        raise typer.Exit(code=1)
+    stderr = Console(stderr=True)
+    stderr.print(f"Unexpected error occurred while scanning path: {path}")
+    raise typer.Exit(code=1)
