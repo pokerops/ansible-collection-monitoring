@@ -36,7 +36,9 @@ def filesystem_files_cmd(
 
 
 def argument(option: str, value: Optional[str]) -> str:
-    return (value and f"{option} {value}") or ""
+    if value:
+        return f"{option} {value}"
+    return ""
 
 
 def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Path]]]:
@@ -93,7 +95,7 @@ def files(
         recursive: Whether to scan recursively
         log_id: Log identifier
     """
-    args = [
+    args: List[str] = [
         argument("-maxdepth", "1" if not recursive else None),
         argument("-type", "f"),
         argument("-name", name),
