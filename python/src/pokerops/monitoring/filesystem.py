@@ -1,7 +1,7 @@
 import json
 import subprocess
 from pathlib import Path
-from typing import Iterable, list, Optional, tuple
+from typing import Iterable, Optional
 
 import typer
 from pokerops.monitoring import tools
@@ -41,7 +41,7 @@ def argument(option: str, value: Optional[str]) -> str:
     return ""
 
 
-def find(path: Path, arguments: Optional[Iterable[str]] = None) -> tuple[Optional[str], Optional[list[Path]]]:
+def find(path: Path, arguments: Optional[Iterable[str]] = None) -> tuple[str | None, list[Path] | None]:
     """Recursive filtered search for files in a directory
 
     Returns:
