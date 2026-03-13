@@ -110,9 +110,10 @@ def files(
         arguments=args,
     )
 
+    file_list = file_list or []
+
     files_info: list[dict[str, object]] = []
 
-    files_info: list[dict] = []
     total_size = 0
     newest: float | None = None
     oldest: float | None = None
