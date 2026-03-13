@@ -109,14 +109,49 @@ def files(
         ),
     )
 
+    files_info = []
+    total_size = 0
+    newest = None
+    oldest = None
+
+    for p in file_list:
+        try:
+            stat = p.stat()
+
+            size = stat.st_size
+            mtime = stat.st_mtime
+            ctime_val = stat.st_ctime
+
+            files_info.append({
+                "path": str(p),
+                "name": p.name,
+                "size_bytes": size,
+                "mtime": mtime,
+                "ctime": ctime_val,
+            })
+
+            total_size += size
+
+            if newest is None or mtime > newest:
+                newest = mtime
+
+            if oldest is None or mtime < oldest:
+                oldest = mtime
+
+        except Exception:
+            continue
+
     if file_list is not None:
         file_data = {
             "filesystem": {
                 "path": path,
                 "ctime": ctime,
                 "mtime": mtime,
-                "files": [str(p) for p in file_list],
-                "count": len(file_list),
+                "files": files_info,
+                "count": len(files_info),
+                "size_bytes": total_size,
+                "newest_file_timestamp": newest,
+                "oldest_file_timestamp": oldest,
                 "error": error,
             }
         }
