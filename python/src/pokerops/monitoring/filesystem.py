@@ -93,15 +93,19 @@ def files(
         recursive: Whether to scan recursively
         log_id: Log identifier
     """
+    args = [
+        argument("-maxdepth", "1" if not recursive else None),
+        argument("-type", "f"),
+        argument("-name", name),
+        argument("-mtime", mtime),
+        argument("-ctime", ctime),
+    ]
+
+    args = [a for a in args if a]
+
     error, file_list = find(
         path=Path(path).resolve(),
-        arguments=(
-            argument("-maxdepth", "1" if not recursive else None),
-            argument("-type", "f"),
-            argument("-name", name),
-            argument("-mtime", mtime),
-            argument("-ctime", ctime),
-        ),
+        arguments=args,
     )
 
     file_list = file_list or []
