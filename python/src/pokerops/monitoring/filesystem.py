@@ -35,10 +35,10 @@ def filesystem_files_cmd(
     )
 
 
-def argument(option: str, value: str | None) -> str:
+def argument(option: str, value: str | None) -> list[str]:
     if value:
-        return f"{option} {value}"
-    return ""
+        return [option, value]
+    return []
 
 
 def find(path: Path, arguments: Iterable[str] | None = None) -> tuple[str | None, list[Path] | None]:
@@ -49,10 +49,7 @@ def find(path: Path, arguments: Iterable[str] | None = None) -> tuple[str | None
         - On success: (None, list of matching files)
         - On error: (error_message, None)
     """
-    args = list(arguments or [])
-    find_args = " ".join(args)
-
-    command = ["find", str(path)] + [arg for arg in find_args.split() if arg]
+    command = ["find", str(path), *(arguments or [])]
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -96,14 +93,12 @@ def files(
         log_id: Log identifier
     """
     args: list[str] = [
-        argument("-maxdepth", "1" if not recursive else None),
-        argument("-type", "f"),
-        argument("-name", name),
-        argument("-mtime", mtime),
-        argument("-ctime", ctime),
+        *argument("-maxdepth", "1" if not recursive else None),
+        "-type", "f",
+        *argument("-name", name),
+        *argument("-mtime", mtime),
+        *argument("-ctime", ctime),
     ]
-
-    args = [a for a in args if a]
 
     error, file_list = find(
         path=Path(path).resolve(),
