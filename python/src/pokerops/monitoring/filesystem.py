@@ -13,14 +13,14 @@ app = typer.Typer(help="Filesystem monitoring commands")
 @app.command("files")
 def filesystem_files_cmd(
     path: str = typer.Argument(help="Filesystem path to check"),
-    name: Optional[str] = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
-    mtime: Optional[str] = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
-    ctime: Optional[str] = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
-    recursive: bool = typer.Option(True, help="Enable recursive search"),  # pyright: ignore[reportCallInDefaultInitializer]
-    log_id: str = typer.Option("filesystem-files", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
-    location: str = typer.Option("", help="Location identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
-    environment: str = typer.Option("", help="Environment name"),  # pyright: ignore[reportCallInDefaultInitializer]
-    function: str = typer.Option("", help="Function identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
+    name: Optional[str] = typer.Option(None, help="Filename filter"), # pyright: ignore[reportCallInDefaultInitializer]
+    mtime: Optional[str] = typer.Option(None, help="Modification time filter"), # pyright: ignore[reportCallInDefaultInitializer]
+    ctime: Optional[str] = typer.Option(None, help="Change time filter"), # pyright: ignore[reportCallInDefaultInitializer]
+    recursive: bool = typer.Option(True, help="Enable recursive search"), # pyright: ignore[reportCallInDefaultInitializer]
+    log_id: str = typer.Option("filesystem-files", help="Log identifier"), # pyright: ignore[reportCallInDefaultInitializer]
+    location: str = typer.Option("", help="Location identifier"), # pyright: ignore[reportCallInDefaultInitializer]
+    environment: str = typer.Option("", help="Environment name"), # pyright: ignore[reportCallInDefaultInitializer]
+    function: str = typer.Option("", help="Function identifier"), # pyright: ignore[reportCallInDefaultInitializer]
 ) -> None:
     return files(
         path=path,
@@ -50,27 +50,22 @@ def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optiona
     args = arguments or []
     find_args = " ".join(args)
 
-    # Build the find command
     command = ["find", str(path)] + [arg for arg in find_args.split() if arg]
 
     try:
-        # Execute find command
         result = subprocess.run(command, capture_output=True, text=True, check=True)
 
-        # Parse output into list of Path objects
         files = [Path(line.strip()) for line in result.stdout.splitlines() if line.strip()]
 
         return (None, files)
 
     except subprocess.CalledProcessError as e:
-        # Return error message as Left
         error_msg = f"find command failed with exit code {e.returncode}"
         if e.stderr:
             error_msg += f": {e.stderr.strip()}"
         return (error_msg, None)
 
     except Exception as e:
-        # Catch any other exceptions (e.g., file not found)
         return (f"Error executing find: {str(e)}", None)
 
 
@@ -109,13 +104,12 @@ def files(
         ),
     )
 
-    if file_list is None:
-        file_list = []
+    file_list = file_list or []
 
-    files_info = []
+    files_info: List[dict] = []
     total_size = 0
-    newest = None
-    oldest = None
+    newest: Optional[float] = None
+    oldest: Optional[float] = None
 
     for p in file_list:
         try:
@@ -125,13 +119,15 @@ def files(
             file_mtime = stat.st_mtime
             file_ctime = stat.st_ctime
 
-            files_info.append({
-                "path": str(p),
-                "name": p.name,
-                "size_bytes": size,
-                "mtime": file_mtime,
-                "ctime": file_ctime,
-            })
+            files_info.append(
+                {
+                    "path": str(p),
+                    "name": p.name,
+                    "size_bytes": size,
+                    "mtime": file_mtime,
+                    "ctime": file_ctime,
+                }
+            )
 
             total_size += size
 
@@ -144,44 +140,22 @@ def files(
         except Exception:
             continue
 
-    if file_list is not None:
-        file_data = {
-            "filesystem": {
-                "path": path,
-                "ctime": ctime,
-                "mtime": mtime,
-                "files": files_info,
-                "count": len(files_info),
-                "size_bytes": total_size,
-                "newest_file_timestamp": newest,
-                "oldest_file_timestamp": oldest,
-                "error": error,
-            }
-        }
-        data = {
-            **file_data,
-            **tools.metadata(
-                location=location,
-                environment=environment,
-                function=function,
-                log_id=log_id,
-            ),
-        }
-        print(json.dumps(data))
-        return
-
-    # Handle error case
-    error_data = {
+    file_data = {
         "filesystem": {
             "path": path,
             "ctime": ctime,
             "mtime": mtime,
-            "files": [str(p) for p in (file_list or [])],
+            "files": files_info,
+            "count": len(files_info),
+            "size_bytes": total_size,
+            "newest_file_timestamp": newest or 0,
+            "oldest_file_timestamp": oldest or 0,
             "error": error,
         }
     }
+
     data = {
-        **error_data,
+        **file_data,
         **tools.metadata(
             location=location,
             environment=environment,
@@ -189,7 +163,10 @@ def files(
             log_id=log_id,
         ),
     }
+
     print(json.dumps(data))
-    stderr = Console(stderr=True)
-    stderr.print(f"Unexpected error occurred while scanning path: {path}")
-    raise typer.Exit(code=1)
+
+    if error:
+        stderr = Console(stderr=True)
+        stderr.print(f"Unexpected error occurred while scanning path: {path}")
+        raise typer.Exit(code=1)
