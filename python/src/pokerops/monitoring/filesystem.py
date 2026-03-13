@@ -41,18 +41,26 @@ def argument(option: str, value: Optional[str]) -> str:
     return (value and f"{option} {value}") or ""
 
 
-def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Tuple[Path, int]]]]:
-    """Recursive filtered search for files in a directory returning path and size"""
+def find(
+    path: Path,
+    arguments: Optional[Iterable[str]] = None
+) -> Tuple[Optional[str], Optional[List[Tuple[Path, int]]]]:
+    """Recursive filtered search returning (path, size)"""
 
     args = arguments or []
     find_args = " ".join(args)
 
-    command = ["find", str(path)] + [arg for arg in find_args.split() if arg] + ["-printf", "%p|%s\n"]
+    command = (
+        ["find", str(path)]
+        + [arg for arg in find_args.split() if arg]
+        + ["-exec", "stat", "-c", "%n|%s", "{}", ";"]
+    )
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
 
-        files = []
+        files: List[Tuple[Path, int]] = []
+
         for line in result.stdout.splitlines():
             if not line.strip():
                 continue
