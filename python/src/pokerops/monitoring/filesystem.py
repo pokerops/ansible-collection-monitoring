@@ -16,6 +16,7 @@ def filesystem_files_cmd(
     name: Optional[str] = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     mtime: Optional[str] = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     ctime: Optional[str] = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    min_size: Optional[str] = typer.Option(None, help="Minimum file size in bytes"),
     recursive: bool = typer.Option(True, help="Enable recursive search"),  # pyright: ignore[reportCallInDefaultInitializer]
     log_id: str = typer.Option("filesystem-files", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
     location: str = typer.Option("", help="Location identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
@@ -27,6 +28,7 @@ def filesystem_files_cmd(
         name=name,
         mtime=mtime,
         ctime=ctime,
+        min_size=min_size,
         recursive=recursive,
         location=location,
         environment=environment,
@@ -39,38 +41,34 @@ def argument(option: str, value: Optional[str]) -> str:
     return (value and f"{option} {value}") or ""
 
 
-def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Path]]]:
-    """Recursive filtered search for files in a directory
+def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Tuple[Path, int]]]]:
+    """Recursive filtered search for files in a directory returning path and size"""
 
-    Returns:
-        Tuple of (error, result):
-        - On success: (None, list of matching files)
-        - On error: (error_message, None)
-    """
     args = arguments or []
     find_args = " ".join(args)
 
-    # Build the find command
-    command = ["find", str(path)] + [arg for arg in find_args.split() if arg]
+    command = ["find", str(path)] + [arg for arg in find_args.split() if arg] + ["-printf", "%p|%s\n"]
 
     try:
-        # Execute find command
         result = subprocess.run(command, capture_output=True, text=True, check=True)
 
-        # Parse output into list of Path objects
-        files = [Path(line.strip()) for line in result.stdout.splitlines() if line.strip()]
+        files = []
+        for line in result.stdout.splitlines():
+            if not line.strip():
+                continue
+
+            p, size = line.split("|", 1)
+            files.append((Path(p), int(size)))
 
         return (None, files)
 
     except subprocess.CalledProcessError as e:
-        # Return error message as Left
         error_msg = f"find command failed with exit code {e.returncode}"
         if e.stderr:
             error_msg += f": {e.stderr.strip()}"
         return (error_msg, None)
 
     except Exception as e:
-        # Catch any other exceptions (e.g., file not found)
         return (f"Error executing find: {str(e)}", None)
 
 
@@ -82,6 +80,7 @@ def files(
     name: Optional[str] = None,
     mtime: Optional[str] = None,
     ctime: Optional[str] = None,
+    min_size: Optional[str] = None,
     recursive: bool = True,
     log_id: str = "filesystem-files",
 ) -> None:
@@ -106,40 +105,9 @@ def files(
             argument("-name", name),
             argument("-mtime", mtime),
             argument("-ctime", ctime),
+            argument("-size", f"+{min_size}c" if min_size else None),
         ),
     )
-
-    files_info = []
-    total_size = 0
-    newest = None
-    oldest = None
-
-    for p in file_list:
-        try:
-            stat = p.stat()
-
-            size = stat.st_size
-            mtime = stat.st_mtime
-            ctime_val = stat.st_ctime
-
-            files_info.append({
-                "path": str(p),
-                "name": p.name,
-                "size_bytes": size,
-                "mtime": mtime,
-                "ctime": ctime_val,
-            })
-
-            total_size += size
-
-            if newest is None or mtime > newest:
-                newest = mtime
-
-            if oldest is None or mtime < oldest:
-                oldest = mtime
-
-        except Exception:
-            continue
 
     if file_list is not None:
         file_data = {
@@ -147,11 +115,11 @@ def files(
                 "path": path,
                 "ctime": ctime,
                 "mtime": mtime,
-                "files": files_info,
-                "count": len(files_info),
-                "size_bytes": total_size,
-                "newest_file_timestamp": newest,
-                "oldest_file_timestamp": oldest,
+                "files": [
+                    {"path": str(p), "size": size}
+                    for p, size in file_list
+                ],
+                "count": len(file_list),
                 "error": error,
             }
         }
