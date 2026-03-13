@@ -45,39 +45,37 @@ def find(
     path: Path,
     arguments: Optional[Iterable[str]] = None
 ) -> Tuple[Optional[str], Optional[List[Tuple[Path, int]]]]:
-    """Recursive filtered search returning (path, size)"""
 
     args = arguments or []
-    find_args = " ".join(args)
+    find_args = [arg for arg in " ".join(args).split() if arg]
 
-    command = (
-        ["find", str(path)]
-        + [arg for arg in find_args.split() if arg]
-        + ["-exec", "stat", "-c", "%n|%s", "{}", ";"]
-    )
+    # First try GNU find (fastest)
+    command = ["find", str(path)] + find_args + ["-printf", "%p|%s\n"]
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
 
-        files: List[Tuple[Path, int]] = []
-
+        files = []
         for line in result.stdout.splitlines():
             if not line.strip():
                 continue
-
             p, size = line.split("|", 1)
             files.append((Path(p), int(size)))
 
         return (None, files)
 
-    except subprocess.CalledProcessError as e:
-        error_msg = f"find command failed with exit code {e.returncode}"
-        if e.stderr:
-            error_msg += f": {e.stderr.strip()}"
-        return (error_msg, None)
+    except subprocess.CalledProcessError:
+        # Fallback portable implementation
+        command = ["find", str(path)] + find_args
 
-    except Exception as e:
-        return (f"Error executing find: {str(e)}", None)
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+
+        files = []
+        for line in result.stdout.splitlines():
+            p = Path(line.strip())
+            files.append((p, p.stat().st_size))
+
+        return (None, files)
 
 
 def files(
@@ -124,8 +122,11 @@ def files(
                 "ctime": ctime,
                 "mtime": mtime,
                 "files": [
-                    {"path": str(p), "size": size}
-                    for p, size in file_list
+                    {
+                        "path": str(p),
+                        "size": p.stat().st_size
+                    }
+                    for p in file_list
                 ],
                 "count": len(file_list),
                 "error": error,
