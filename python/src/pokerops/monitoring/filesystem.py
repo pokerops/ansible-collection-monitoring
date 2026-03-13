@@ -13,14 +13,14 @@ app = typer.Typer(help="Filesystem monitoring commands")
 @app.command("files")
 def filesystem_files_cmd(
     path: str = typer.Argument(help="Filesystem path to check"),
-    name: Optional[str] = typer.Option(None, help="Filename filter"), # pyright: ignore[reportCallInDefaultInitializer]
-    mtime: Optional[str] = typer.Option(None, help="Modification time filter"), # pyright: ignore[reportCallInDefaultInitializer]
-    ctime: Optional[str] = typer.Option(None, help="Change time filter"), # pyright: ignore[reportCallInDefaultInitializer]
-    recursive: bool = typer.Option(True, help="Enable recursive search"), # pyright: ignore[reportCallInDefaultInitializer]
-    log_id: str = typer.Option("filesystem-files", help="Log identifier"), # pyright: ignore[reportCallInDefaultInitializer]
-    location: str = typer.Option("", help="Location identifier"), # pyright: ignore[reportCallInDefaultInitializer]
-    environment: str = typer.Option("", help="Environment name"), # pyright: ignore[reportCallInDefaultInitializer]
-    function: str = typer.Option("", help="Function identifier"), # pyright: ignore[reportCallInDefaultInitializer]
+    name: Optional[str] = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    mtime: Optional[str] = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    ctime: Optional[str] = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    recursive: bool = typer.Option(True, help="Enable recursive search"),  # pyright: ignore[reportCallInDefaultInitializer]
+    log_id: str = typer.Option("filesystem-files", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
+    location: str = typer.Option("", help="Location identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
+    environment: str = typer.Option("", help="Environment name"),  # pyright: ignore[reportCallInDefaultInitializer]
+    function: str = typer.Option("", help="Function identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
 ) -> None:
     return files(
         path=path,
