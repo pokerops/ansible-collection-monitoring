@@ -84,7 +84,7 @@ class TestFind:
 
         assert error is None
         assert result is not None
-        assert len(result) >= 5
+        assert len(result) >= 5  # Should find all files and directories
 
         # Validate tuple structure
         p, size = result[0]

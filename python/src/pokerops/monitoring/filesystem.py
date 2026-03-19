@@ -16,7 +16,7 @@ def filesystem_files_cmd(
     name: Optional[str] = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     mtime: Optional[str] = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     ctime: Optional[str] = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
-    min_size: Optional[str] = typer.Option(None, help="Minimum file size in bytes"),
+    size: Optional[str] = typer.Option(None, help="Minimum file size filter (e.g., 10K, 5M)"),  # pyright: ignore[reportCallInDefaultInitializer]
     recursive: bool = typer.Option(True, help="Enable recursive search"),  # pyright: ignore[reportCallInDefaultInitializer]
     log_id: str = typer.Option("filesystem-files", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
     location: str = typer.Option("", help="Location identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
@@ -28,7 +28,7 @@ def filesystem_files_cmd(
         name=name,
         mtime=mtime,
         ctime=ctime,
-        min_size=min_size,
+        size=size,
         recursive=recursive,
         location=location,
         environment=environment,
@@ -42,56 +42,41 @@ def argument(option: str, value: Optional[str]) -> str:
 
 
 def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Tuple[Path, int]]]]:
+    """Recursive filtered search for files in a directory
 
+    Returns:
+        Tuple of (error, result):
+        - On success: (None, list of matching files)
+        - On error: (error_message, None)
+    """
     args = arguments or []
-    find_args = [arg for arg in " ".join(args).split() if arg]
+    find_args = " ".join(args)
 
-    command = ["find", str(path)] + find_args + ["-printf", "%p|%s\n"]
+    # Build the find command
+    command = ["find", str(path)] + [arg for arg in find_args.split() if arg]
 
     try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        # Execute find command
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
 
+        # Parse output into list of Path objects
         files: List[Tuple[Path, int]] = []
 
         for line in result.stdout.splitlines():
-            if not line.strip():
-                continue
-
-            p, size = line.split("|", 1)
-            files.append((Path(p), int(size)))
+            p = Path(line.strip())
+            files.append((p, p.stat().st_size))
 
         return (None, files)
 
-    except subprocess.CalledProcessError:
-        # Try portable fallback without -printf
-        try:
-            command = ["find", str(path)] + find_args
-
-            result = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-
-            files: List[Tuple[Path, int]] = []
-
-            for line in result.stdout.splitlines():
-                p = Path(line.strip())
-                files.append((p, p.stat().st_size))
-
-            return (None, files)
-
-        except subprocess.CalledProcessError as e2:
-            error = f"find command failed (exit code {e2.returncode}): {e2.stderr.strip()}"
-            return (error, None)
+    except subprocess.CalledProcessError as e:
+        # Return error message as Left
+        error_msg = f"find command failed with exit code {e.returncode}"
+        if e.stderr:
+            error_msg += f": {e.stderr.strip()}"
+        return (error_msg, None)
 
     except Exception as e:
+        # Catch any other exceptions (e.g., file not found)
         return (f"Error executing find: {str(e)}", None)
 
 
@@ -103,7 +88,7 @@ def files(
     name: Optional[str] = None,
     mtime: Optional[str] = None,
     ctime: Optional[str] = None,
-    min_size: Optional[str] = None,
+    size: Optional[str] = None,
     recursive: bool = True,
     log_id: str = "filesystem-files",
 ) -> None:
@@ -128,7 +113,7 @@ def files(
             argument("-name", name),
             argument("-mtime", mtime),
             argument("-ctime", ctime),
-            argument("-size", f"+{min_size}c" if min_size else None),
+            argument("-size", size),
         ),
     )
 
@@ -143,6 +128,7 @@ def files(
                 "error": error,
             }
         }
+
         data = {
             **file_data,
             **tools.metadata(
@@ -152,19 +138,17 @@ def files(
                 log_id=log_id,
             ),
         }
+
         print(json.dumps(data))
         return
 
-    # Handle error case
     error_data = {
         "filesystem": {
             "path": path,
-            "ctime": ctime,
-            "mtime": mtime,
-            "files": [{"path": str(p), "size": size} for p, size in (file_list or [])],
             "error": error,
         }
     }
+
     data = {
         **error_data,
         **tools.metadata(
@@ -174,7 +158,14 @@ def files(
             log_id=log_id,
         ),
     }
+
     print(json.dumps(data))
+
     stderr = Console(stderr=True)
     stderr.print(f"Unexpected error occurred while scanning path: {path}")
+
     raise typer.Exit(code=1)
+
+
+if __name__ == "__main__":
+    app()
