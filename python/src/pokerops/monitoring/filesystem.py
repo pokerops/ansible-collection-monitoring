@@ -16,7 +16,7 @@ def filesystem_files_cmd(
     name: Optional[str] = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     mtime: Optional[str] = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     ctime: Optional[str] = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
-    size: Optional[str] = typer.Option(None, help="Minimum file size filter (e.g., 10K, 5M)"),  # pyright: ignore[reportCallInDefaultInitializer]
+    size: Optional[str] = typer.Option(None, help="File size filter (e.g., 10K, 5M)"),  # pyright: ignore[reportCallInDefaultInitializer]
     recursive: bool = typer.Option(True, help="Enable recursive search"),  # pyright: ignore[reportCallInDefaultInitializer]
     log_id: str = typer.Option("filesystem-files", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
     location: str = typer.Option("", help="Location identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
