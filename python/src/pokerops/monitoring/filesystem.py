@@ -16,6 +16,7 @@ def filesystem_files_cmd(
     name: Optional[str] = typer.Option(None, help="Filename filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     mtime: Optional[str] = typer.Option(None, help="Modification time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
     ctime: Optional[str] = typer.Option(None, help="Change time filter"),  # pyright: ignore[reportCallInDefaultInitializer]
+    size: Optional[str] = typer.Option(None, help="File size filter (e.g., 10K, 5M)"),  # pyright: ignore[reportCallInDefaultInitializer]
     recursive: bool = typer.Option(True, help="Enable recursive search"),  # pyright: ignore[reportCallInDefaultInitializer]
     log_id: str = typer.Option("filesystem-files", help="Log identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
     location: str = typer.Option("", help="Location identifier"),  # pyright: ignore[reportCallInDefaultInitializer]
@@ -27,6 +28,7 @@ def filesystem_files_cmd(
         name=name,
         mtime=mtime,
         ctime=ctime,
+        size=size,
         recursive=recursive,
         location=location,
         environment=environment,
@@ -39,7 +41,7 @@ def argument(option: str, value: Optional[str]) -> str:
     return (value and f"{option} {value}") or ""
 
 
-def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Path]]]:
+def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optional[str], Optional[List[Tuple[Path, int]]]]:
     """Recursive filtered search for files in a directory
 
     Returns:
@@ -58,7 +60,11 @@ def find(path: Path, arguments: Optional[Iterable[str]] = None) -> Tuple[Optiona
         result = subprocess.run(command, capture_output=True, text=True, check=True)
 
         # Parse output into list of Path objects
-        files = [Path(line.strip()) for line in result.stdout.splitlines() if line.strip()]
+        files: List[Tuple[Path, int]] = []
+
+        for line in result.stdout.splitlines():
+            p = Path(line.strip())
+            files.append((p, p.stat().st_size))
 
         return (None, files)
 
@@ -82,6 +88,7 @@ def files(
     name: Optional[str] = None,
     mtime: Optional[str] = None,
     ctime: Optional[str] = None,
+    size: Optional[str] = None,
     recursive: bool = True,
     log_id: str = "filesystem-files",
 ) -> None:
@@ -106,6 +113,7 @@ def files(
             argument("-name", name),
             argument("-mtime", mtime),
             argument("-ctime", ctime),
+            argument("-size", size),
         ),
     )
 
@@ -115,11 +123,12 @@ def files(
                 "path": path,
                 "ctime": ctime,
                 "mtime": mtime,
-                "files": [str(p) for p in file_list],
+                "files": [{"path": str(p), "size": size} for p, size in file_list],
                 "count": len(file_list),
                 "error": error,
             }
         }
+
         data = {
             **file_data,
             **tools.metadata(
@@ -129,19 +138,17 @@ def files(
                 log_id=log_id,
             ),
         }
+
         print(json.dumps(data))
         return
 
-    # Handle error case
     error_data = {
         "filesystem": {
             "path": path,
-            "ctime": ctime,
-            "mtime": mtime,
-            "files": [str(p) for p in (file_list or [])],
             "error": error,
         }
     }
+
     data = {
         **error_data,
         **tools.metadata(
@@ -151,7 +158,14 @@ def files(
             log_id=log_id,
         ),
     }
+
     print(json.dumps(data))
+
     stderr = Console(stderr=True)
     stderr.print(f"Unexpected error occurred while scanning path: {path}")
+
     raise typer.Exit(code=1)
+
+
+if __name__ == "__main__":
+    app()
