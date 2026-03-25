@@ -16,6 +16,7 @@
         name:
           - "git+{{ monitoring_script_repo_url }}@{{ monitoring_script_repo_version }}"
         virtualenv: "{{ monitoring_script_venv }}"
+        state: forcereinstall
 
     - name: Create monitoring script
       ansible.builtin.copy:
