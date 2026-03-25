@@ -113,7 +113,6 @@ provisioner:
             - path: "{{ molecule_tmpdir[1] }}"
               recursive: true
               interval: 10
-              size: 1k
 
 verifier:
   name: ansible
