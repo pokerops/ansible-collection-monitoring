@@ -20,7 +20,7 @@ sources:
         "--mtime {{ fs.mtime }}",
       {% endif %}
       {% if 'size' in fs %}
-        "-- size {{ fs.size }}",
+        "--size {{ fs.size }}",
       {% endif %}
       {% if 'recursive' in fs and fs.recursive %}
         "--recursive",
