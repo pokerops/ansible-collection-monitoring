@@ -58,10 +58,10 @@ version:
   REPO_VERSION=$(dasel -f roles/monitoring/defaults/main.yml .monitoring_script_repo_version | sed -e "s/^['\"]// ; s/['\"]$//")
   if [ "${ANSIBLE_VERSION}" != "${PYTHON_VERSION}" ]; then
     echo "Python version '${PYTHON_VERSION}' and Ansible version '${ANSIBLE_VERSION}' do not match"
-    EXIT=1
+    exit 1
   fi
   if [ "${PYTHON_VERSION}" != "${REPO_VERSION}" ]; then
     echo "Module target version '${REPO_VERSION}' and Python version '${PYTHON_VERSION}' do not match"
-    EXIT=1
+    exit 1
   fi
   echo "All versions match release ${PYTHON_VERSION}"
