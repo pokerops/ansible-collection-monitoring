@@ -19,6 +19,9 @@ sources:
       {% if 'mtime' in fs %}
         "--mtime {{ fs.mtime }}",
       {% endif %}
+      {% if 'size' in fs %}
+        "--size {{ fs.size }}",
+      {% endif %}
       {% if 'recursive' in fs and fs.recursive %}
         "--recursive",
       {% endif %}
