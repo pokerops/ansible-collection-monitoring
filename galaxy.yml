@@ -1,11 +1,7 @@
 ---
 namespace: pokerops
 name: monitoring
-<<<<<<< upd_template
 version: 0.1.15
-=======
-version: 0.1.14
->>>>>>> master
 readme: README.md
 authors:
   - Ted Cook <358176+teddyphreak@users.noreply.github.com>
