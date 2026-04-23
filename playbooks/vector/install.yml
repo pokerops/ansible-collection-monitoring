@@ -157,9 +157,44 @@
         beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
         beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
         beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
-        beat_elasticsearch_index: "{{ item.index }}"
       when: monitoring_filesystem_checks | length > 0
       notify: vector_reload
+
+    - name: Destroy Vector rabbitmq monitor configuration
+      ansible.builtin.file:
+        path: "{{ monitoring_vector_conf_path }}/rabbitmq.yaml"
+        state: "absent"
+      when: not monitoring_rabbitmq_enabled | bool
+      notify: vector_reload
+
+    - name: Manage Vector rabbitmq monitor configuration
+      when: monitoring_rabbitmq_enabled | bool
+      block:
+        - name: Verify Vector rabbitmq monitor settings
+          ansible.builtin.assert:
+            that:
+              - monitoring_rabbitmq_settings is defined
+              - monitoring_rabbitmq_settings['connection_string'] is defined
+
+        - name: Deploy Vector rabbitmq monitor configuration
+          ansible.builtin.template:
+            src: rabbitmq.yaml.j2
+            dest: "{{ monitoring_vector_conf_path }}/rabbitmq.yaml"
+            owner: vector
+            group: vector
+            mode: "0640"
+          vars:
+            vector_output_file_enable: "{{ monitoring_vector_output_file_enable }}"
+            vector_monitor_script_path: "{{ monitoring_script_path }}"
+            vector_rabbitmq_index: "{{ monitoring_elasticsearch_index_rabbitmq }}"
+            vector_rabbitmq_location: "{{ monitoring_agent_location }}"
+            vector_rabbitmq_environment: "{{ monitoring_agent_environment }}"
+            vector_rabbitmq_function: "{{ monitoring_agent_function }}"
+            vector_rabbitmq_settings: "{{ monitoring_rabbitmq_settings }}"
+            beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
+            beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
+            beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
+          notify: vector_reload
 
     - name: Validate Vector configuration
       ansible.builtin.command:
