@@ -164,17 +164,22 @@
       ansible.builtin.file:
         path: "{{ monitoring_vector_conf_path }}/rabbitmq.yaml"
         state: "absent"
-      when: not monitoring_rabbitmq_enabled | bool
+      when: monitoring_rabbitmq_checks | length == 0
       notify: vector_reload
 
     - name: Manage Vector rabbitmq monitor configuration
-      when: monitoring_rabbitmq_enabled | bool
+      when: monitoring_rabbitmq_checks | length > 0
       block:
         - name: Verify Vector rabbitmq monitor settings
           ansible.builtin.assert:
             that:
-              - monitoring_rabbitmq_settings is defined
-              - monitoring_rabbitmq_settings['connection_string'] is defined
+              - _missing_connections | length == 0
+              - (_connection_strings | length) == (_unique_connection_strings | length)
+          vars:
+            _rabbitmq: "{{ monitoring_rabbitmq_checks }}"
+            _missing_connections: "{{ _rabbitmq | rejectattr('connection_string', 'defined') }}"
+            _connection_strings: "{{ _rabbitmq | map(attribute='connection_string') }}"
+            _unique_connection_strings: "{{ _connection_strings | unique }}"
 
         - name: Deploy Vector rabbitmq monitor configuration
           ansible.builtin.template:
@@ -190,7 +195,7 @@
             vector_rabbitmq_location: "{{ monitoring_agent_location }}"
             vector_rabbitmq_environment: "{{ monitoring_agent_environment }}"
             vector_rabbitmq_function: "{{ monitoring_agent_function }}"
-            vector_rabbitmq_settings: "{{ monitoring_rabbitmq_settings }}"
+            vector_rabbitmq_checks: "{{ monitoring_rabbitmq_checks }}"
             beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
             beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
             beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"

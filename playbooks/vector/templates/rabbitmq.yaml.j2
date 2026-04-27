@@ -1,22 +1,40 @@
 ---
 sources:
-  rabbitmq:  
+{% for rmq in vector_rabbitmq_checks %}
+  rabbitmq_{{ loop.index0 }}:
     type: "amqp"
-    connection_string: {{ vector_rabbitmq_settings['connection_string'] }}
-    consumer: {{ vector_rabbitmq_settings['consumer'] | default('vector') }}
-    exchange_key: {{ vector_rabbitmq_settings['exchange_key'] | default('exchange_key') }}
-    offset_key: {{ vector_rabbitmq_settings['offset_key'] | default('offset') }}
-    queue: {{ vector_rabbitmq_settings['queue'] | default('queue') }}
-    routing_key_field: {{ vector_rabbitmq_settings['routing_key_field'] | default('routing') }}
-    decoding: {{ vector_rabbitmq_settings['decoding'] | default(omit) }}
-    framing: {{ vector_rabbitmq_settings['framing'] | default(omit) }}
-    prefetch_count: {{ vector_rabbitmq_settings['prefetch_count'] | default(omit) }}
-    tls: {{ vector_rabbitmq_settings['tls'] | default(omit) }}
+    connection_string: {{ rmq.connection_string }}
+    consumer: {{ rmq.consumer | default('vector') }}
+{% if rmq.exchange_key is defined -%}
+    exchange_key: {{ rmq.exchange_key }}
+{% endif -%}
+{% if rmq.offset_key is defined -%}
+    offset_key: {{ rmq.offset_key }}
+{% endif -%}
+{% if rmq.queue is defined -%}
+    queue: {{ rmq.queue }}
+{% endif -%}
+{% if rmq.routing_key_field is defined -%}
+    routing_key_field: {{ rmq.routing_key_field }}
+{% endif -%}
+{% if rmq.decoding is defined -%}
+    decoding: {{ rmq.decoding }}
+{% endif -%}
+{% if rmq.framing is defined -%}
+    framing: {{ rmq.framing }}
+{% endif -%}
+{% if rmq.prefetch_count is defined -%}
+    prefetch_count: {{ rmq.prefetch_count }}
+{% endif -%}
+{% if rmq.tls is defined -%}
+    tls: {{ rmq.tls }}
+{% endif -%}
+{% endfor %}
 
 transforms:
   rabbitmq_data:
     type: "remap"
-    inputs: ["rabbitmq"]
+    inputs: ["rabbitmq_*"]
     source: |
       .@timestamp = parse_timestamp!(.timestamp, format: "%+")
       .agent.hostname = .agent.name
