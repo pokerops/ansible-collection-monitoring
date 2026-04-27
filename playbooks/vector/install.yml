@@ -173,11 +173,61 @@
         - name: Verify Vector rabbitmq monitor settings
           ansible.builtin.assert:
             that:
-              - _missing_connections | length == 0
-              - (_connection_strings | length) == (_unique_connection_strings | length)
+              - _username | length == 0
+              - _password | length == 0
+              - _host | length == 0
           vars:
             _rabbitmq: "{{ monitoring_rabbitmq_checks }}"
-            _missing_connections: "{{ _rabbitmq | rejectattr('connection_string', 'defined') }}"
+            _username: "{{ _rabbitmq | rejectattr('username', 'defined') }}"
+            _password: "{{ _rabbitmq | rejectattr('password', 'defined') }}"
+            _host: "{{ _rabbitmq | rejectattr('host', 'defined') }}"
+
+        - name: Set RabbitMQ connection strings
+          ansible.builtin.set_fact:
+            monitoring_rabbitmq_settings: "{{ _connection_strings }}"
+          vars:
+            _map_join: "nephelaiio.plugins.map_join"
+            _to_dict: "nephelaiio.plugins.to_dict"
+            _map_format: "nephelaiio.plugins.map_format"
+            _default:
+              vhost: "%2f"
+              timeout: 10
+              port: 5672
+              scheme: "amqp"
+            _checks: "{{ monitoring_rabbitmq_checks | sort(attribute='username') }}"
+            _checks_default: "{{ [_default] | product(_checks) | map('combine') }}"
+            _credentials_settings: "{{ _checks_default | map(_map_join, ['username', 'password'], ':') }}"
+            _credentials_dict: "{{ _credentials_settings | map(_to_dict, 'credentials') }}"
+            _credentials: "{{ _checks_default | zip(_credentials_dict) | map('combine') }}"
+            _schemes: "{{ _credentials | map(attribute='scheme') }}"
+            _schemes_format: "{{ _schemes | map(_map_format, '%s://') }}"
+            _schemes_dict: "{{ _schemes_format | map(_to_dict, 'scheme') }}"
+            _schemes_overwritten: "{{ _credentials_overwritten | zip('_schemes_dict') | map('combine') }}"
+            _server_settings: "{{ _schemes_overwritten | map(_map_join, ['host', 'port'], ':') }}"
+            _servers_dict: "{{ _server_settings | map(_to_dict, 'server') }}"
+            _servers: "{{ _schemes_overwritten | zip(_servers_dict) | map('combine') }}"
+            _auth_settings: "{{ _servers | map(_map_join, ['scheme', 'credentials']) }}"
+            _auth_dict: "{{ _auth_settings | map(_to_dict, 'auth') }}"
+            _auths: "{{ _servers_overwritten | zip(_auth_dict) | map('combine') }}"
+            _amqp_settings: "{{ _auths | map(_map_join, ['auth', 'server'], '@') }}"
+            _amqp_dict: "{{ _amqp_settings | map(_to_dict, 'amqp') }}"
+            _amqps: "{{ _auths | zip(_amqp_dict) | map('combine') }}"
+            _timeouts: "{{ _amqps | map(attribute='timeout') }}"
+            _timeouts_format: "{{ _timeouts | map(_map_format, 'timeout=%s') }}"
+            _timeouts_dict: "{{ _timeouts_format | map(_to_dict, 'timeout') }}"
+            _timeouts_overwritten: "{{ _amqps | zip(_timeouts_dict) | map('combine') }}"
+            _uri_settings: "{{ _timeouts_overwritten | map(_map_join, ['vhost', 'timeout'], '?') }}"
+            _uri_dict: "{{ _uri_settings | map(_to_dict, 'uri') }}"
+            _uris: "{{ _timeouts_overwritten | zip(_uri_dict) | map('combine') }}"
+            _connection_string_settings: "{{ _uris | map(_map_join, ['amqp', 'uri'], '/') }}"
+            _connection_strings_dict: "{{ _connection_string_settings | map(_to_dict, 'connection_string') }}"
+            _connection_strings: "{{ _uris | zip(_connection_strings_dict) | map('combine') }}"
+
+        - name: Verify Vector rabbitmq monitor settings
+          ansible.builtin.assert:
+            that: (_connection_strings | length) == (_unique_connection_strings | length)
+          vars:
+            _rabbitmq: "{{ monitoring_rabbitmq_settings }}"
             _connection_strings: "{{ _rabbitmq | map(attribute='connection_string') }}"
             _unique_connection_strings: "{{ _connection_strings | unique }}"
 
@@ -195,7 +245,7 @@
             vector_rabbitmq_location: "{{ monitoring_agent_location }}"
             vector_rabbitmq_environment: "{{ monitoring_agent_environment }}"
             vector_rabbitmq_function: "{{ monitoring_agent_function }}"
-            vector_rabbitmq_checks: "{{ monitoring_rabbitmq_checks }}"
+            vector_rabbitmq_checks: "{{ monitoring_rabbitmq_settings }}"
             beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
             beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
             beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
