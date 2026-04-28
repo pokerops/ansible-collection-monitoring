@@ -33,15 +33,17 @@
             that: monitoring_elasticsearch_password != ""
             fail_msg: "monitoring_elasticsearch_password parameter is required"
 
-    - name: Install Vector agent
-      ansible.builtin.apt:
-        deb: https://packages.timber.io/vector/{{ monitoring_vector_version }}/vector_{{ monitoring_vector_version }}-1_amd64.deb
-
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: true
+    - name: Verify Vector install params
       when: ansible_facts.os_family == "Debian"
-      changed_when: false
+      block:
+        - name: Install Vector agent
+          ansible.builtin.apt:
+            deb: https://packages.timber.io/vector/{{ monitoring_vector_version }}/vector_{{ monitoring_vector_version }}-1_amd64.deb
+
+        - name: Update apt cache
+          ansible.builtin.apt:
+            update_cache: true
+          changed_when: false
 
     - name: Create Vector service override directory
       ansible.builtin.file:
@@ -194,6 +196,7 @@
               timeout: 10
               port: 5672
               scheme: "amqp"
+              consumer: "vector"
             _checks: "{{ monitoring_rabbitmq_checks | sort(attribute='username') }}"
             _checks_default: "{{ [_default] | product(_checks) | map('combine') }}"
             _credentials_settings: "{{ _checks_default | map(_map_join, ['username', 'password'], ':') }}"
@@ -202,13 +205,13 @@
             _schemes: "{{ _credentials | map(attribute='scheme') }}"
             _schemes_format: "{{ _schemes | map(_map_format, '%s://') }}"
             _schemes_dict: "{{ _schemes_format | map(_to_dict, 'scheme') }}"
-            _schemes_overwritten: "{{ _credentials_overwritten | zip('_schemes_dict') | map('combine') }}"
+            _schemes_overwritten: "{{ _credentials | zip(_schemes_dict) | map('combine') }}"
             _server_settings: "{{ _schemes_overwritten | map(_map_join, ['host', 'port'], ':') }}"
             _servers_dict: "{{ _server_settings | map(_to_dict, 'server') }}"
             _servers: "{{ _schemes_overwritten | zip(_servers_dict) | map('combine') }}"
-            _auth_settings: "{{ _servers | map(_map_join, ['scheme', 'credentials']) }}"
+            _auth_settings: "{{ _servers | map(_map_join, ['scheme', 'credentials'], '') }}"
             _auth_dict: "{{ _auth_settings | map(_to_dict, 'auth') }}"
-            _auths: "{{ _servers_overwritten | zip(_auth_dict) | map('combine') }}"
+            _auths: "{{ _servers | zip(_auth_dict) | map('combine') }}"
             _amqp_settings: "{{ _auths | map(_map_join, ['auth', 'server'], '@') }}"
             _amqp_dict: "{{ _amqp_settings | map(_to_dict, 'amqp') }}"
             _amqps: "{{ _auths | zip(_amqp_dict) | map('combine') }}"
@@ -222,14 +225,6 @@
             _connection_string_settings: "{{ _uris | map(_map_join, ['amqp', 'uri'], '/') }}"
             _connection_strings_dict: "{{ _connection_string_settings | map(_to_dict, 'connection_string') }}"
             _connection_strings: "{{ _uris | zip(_connection_strings_dict) | map('combine') }}"
-
-        - name: Verify Vector rabbitmq monitor settings
-          ansible.builtin.assert:
-            that: (_connection_strings | length) == (_unique_connection_strings | length)
-          vars:
-            _rabbitmq: "{{ monitoring_rabbitmq_settings }}"
-            _connection_strings: "{{ _rabbitmq | map(attribute='connection_string') }}"
-            _unique_connection_strings: "{{ _connection_strings | unique }}"
 
         - name: Deploy Vector rabbitmq monitor configuration
           ansible.builtin.template:

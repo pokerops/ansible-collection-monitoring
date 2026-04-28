@@ -114,6 +114,10 @@ provisioner:
               recursive: true
               interval: 10
               size: 1k
+          monitoring_rabbitmq_checks:
+            - username: guest
+              password: guest
+              host: 127.0.0.1
 
 verifier:
   name: ansible

@@ -30,11 +30,6 @@ jobs:
           GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}
           GIT_BRANCH=${{ github.head_ref || github.ref_name }}
 
-      - name: Run make configure
-        run: make configure
-          GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}
-          GIT_BRANCH=${{ github.head_ref || github.ref_name }}
-
       - name: Debug configuration changes
         run: git diff
 

@@ -3,31 +3,31 @@ sources:
 {% for rmq in vector_rabbitmq_checks %}
   rabbitmq_{{ loop.index0 }}:
     type: "amqp"
-    connection_string: {{ rmq.connection_string }}
-    consumer: {{ rmq.consumer | default('vector') }}
+    connection_string: "{{ rmq.connection_string }}"
+    consumer: "{{ rmq.consumer }}"
 {% if rmq.exchange_key is defined -%}
-    exchange_key: {{ rmq.exchange_key }}
+    exchange_key: "{{ rmq.exchange_key }}"
 {% endif -%}
 {% if rmq.offset_key is defined -%}
-    offset_key: {{ rmq.offset_key }}
+    offset_key: "{{ rmq.offset_key }}"
 {% endif -%}
 {% if rmq.queue is defined -%}
-    queue: {{ rmq.queue }}
+    queue: "{{ rmq.queue }}"
 {% endif -%}
 {% if rmq.routing_key_field is defined -%}
-    routing_key_field: {{ rmq.routing_key_field }}
+    routing_key_field: "{{ rmq.routing_key_field }}"
 {% endif -%}
 {% if rmq.decoding is defined -%}
-    decoding: {{ rmq.decoding }}
+    decoding: "{{ rmq.decoding }}"
 {% endif -%}
 {% if rmq.framing is defined -%}
-    framing: {{ rmq.framing }}
+    framing: "{{ rmq.framing }}"
 {% endif -%}
 {% if rmq.prefetch_count is defined -%}
-    prefetch_count: {{ rmq.prefetch_count }}
+    prefetch_count: "{{ rmq.prefetch_count }}"
 {% endif -%}
 {% if rmq.tls is defined -%}
-    tls: {{ rmq.tls }}
+    tls: "{{ rmq.tls }}"
 {% endif -%}
 {% endfor %}
 
@@ -38,9 +38,9 @@ transforms:
     source: |
       .@timestamp = parse_timestamp!(.timestamp, format: "%+")
       .agent.hostname = .agent.name
-      .fields.location = {{ vector_rabbitmq_location }}
-      .fields.environment = {{ vector_rabbitmq_environment}}
-      .fields.function = {{ vector_rabbitmq_function }}
+      .fields.location = "{{ vector_rabbitmq_location }}"
+      .fields.environment = "{{ vector_rabbitmq_environment}}"
+      .fields.function = "{{ vector_rabbitmq_function }}"
 
 sinks:
   {% if beat_elasticsearch_hosts | length > 0 -%}
