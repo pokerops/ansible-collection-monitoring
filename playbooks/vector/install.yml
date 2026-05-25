@@ -33,6 +33,14 @@
             that: monitoring_elasticsearch_password != ""
             fail_msg: "monitoring_elasticsearch_password parameter is required"
 
+    - name: Set Vector default facts
+      ansible.builtin.set_fact:
+        _map_join: "nephelaiio.plugins.map_join"
+        _to_dict: "nephelaiio.plugins.to_dict"
+        _map_format: "nephelaiio.plugins.map_format"
+        _pairs: "nephelaiio.plugins.pairs"
+        _cons: "nephelaiio.plugins.cons"
+
     - name: Verify Vector install params
       when: ansible_facts.os_family == "Debian"
       block:
@@ -166,38 +174,47 @@
       ansible.builtin.file:
         path: "{{ monitoring_vector_conf_path }}/rabbitmq.yaml"
         state: "absent"
-      when: monitoring_rabbitmq_checks | length == 0
+      when: monitoring_rabbitmq_checks == {}
       notify: vector_reload
 
     - name: Manage Vector rabbitmq monitor configuration
-      when: monitoring_rabbitmq_checks | length > 0
+      when: monitoring_rabbitmq_checks != {}
       block:
+        - name: Build Vector RabbitMQ fact
+          ansible.builtin.set_fact:
+            _monitoring_rabbitmq_checks: "{{ _vhosts | flatten }}"
+          vars:
+            _rabbitmq: "{{ monitoring_rabbitmq_checks | dict2items | sort(attribute='key') }}"
+            _vhosts_data: "{{ _rabbitmq | map(attribute='key') }}"
+            _vhosts_dict: "{{ _vhosts_data | map(_to_dict, 'vhost') | map(_cons) }}"
+            _values_data: "{{ _rabbitmq | map(attribute='value') }}"
+            _vhosts: "{{ _vhosts_dict | zip(_values_data) | map(_pairs) | map('map', 'combine') }}"
+
         - name: Verify Vector rabbitmq monitor settings
           ansible.builtin.assert:
             that:
               - _username | length == 0
               - _password | length == 0
               - _host | length == 0
+              - (_rabbitmq | length) == (_unique_checks | length)
           vars:
-            _rabbitmq: "{{ monitoring_rabbitmq_checks }}"
+            _rabbitmq: "{{ _monitoring_rabbitmq_checks }}"
             _username: "{{ _rabbitmq | rejectattr('username', 'defined') }}"
             _password: "{{ _rabbitmq | rejectattr('password', 'defined') }}"
             _host: "{{ _rabbitmq | rejectattr('host', 'defined') }}"
+            _unique_checks: "{{ _rabbitmq | unique }}"
 
         - name: Set RabbitMQ connection strings
           ansible.builtin.set_fact:
             monitoring_rabbitmq_settings: "{{ _connection_strings }}"
           vars:
-            _map_join: "nephelaiio.plugins.map_join"
-            _to_dict: "nephelaiio.plugins.to_dict"
-            _map_format: "nephelaiio.plugins.map_format"
             _default:
               vhost: "%2f"
               timeout: 10
               port: 5672
               scheme: "amqp"
               consumer: "vector"
-            _checks: "{{ monitoring_rabbitmq_checks | sort(attribute='username') }}"
+            _checks: "{{ _monitoring_rabbitmq_checks | sort(attribute='username') }}"
             _checks_default: "{{ [_default] | product(_checks) | map('combine') }}"
             _credentials_settings: "{{ _checks_default | map(_map_join, ['username', 'password'], ':') }}"
             _credentials_dict: "{{ _credentials_settings | map(_to_dict, 'credentials') }}"

@@ -115,9 +115,15 @@ provisioner:
               interval: 10
               size: 1k
           monitoring_rabbitmq_checks:
-            - username: guest
-              password: guest
-              host: 127.0.0.1
+            molecule:
+              - username: "{{ rabbitmq_user_name }}"
+                password: "{{ rabbitmq_user_pass }}"
+                host: 127.0.0.1
+                queue: "{{ rabbitmq_queue }}"
+          rabbitmq_vhost: molecule
+          rabbitmq_user_name: molecule
+          rabbitmq_user_pass: molecule
+          rabbitmq_queue: molecule
 
 verifier:
   name: ansible

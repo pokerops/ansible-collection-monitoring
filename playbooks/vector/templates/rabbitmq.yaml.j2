@@ -5,30 +5,30 @@ sources:
     type: "amqp"
     connection_string: "{{ rmq.connection_string }}"
     consumer: "{{ rmq.consumer }}"
-{% if rmq.exchange_key is defined -%}
+{% if rmq.exchange_key is defined %}
     exchange_key: "{{ rmq.exchange_key }}"
-{% endif -%}
-{% if rmq.offset_key is defined -%}
+{% endif %}
+{% if rmq.offset_key is defined %}
     offset_key: "{{ rmq.offset_key }}"
-{% endif -%}
-{% if rmq.queue is defined -%}
+{% endif %}
+{% if rmq.queue is defined %}
     queue: "{{ rmq.queue }}"
-{% endif -%}
-{% if rmq.routing_key_field is defined -%}
+{% endif %}
+{% if rmq.routing_key_field is defined %}
     routing_key_field: "{{ rmq.routing_key_field }}"
-{% endif -%}
-{% if rmq.decoding is defined -%}
+{% endif %}
+{% if rmq.decoding is defined %}
     decoding: "{{ rmq.decoding }}"
-{% endif -%}
-{% if rmq.framing is defined -%}
+{% endif %}
+{% if rmq.framing is defined %}
     framing: "{{ rmq.framing }}"
-{% endif -%}
-{% if rmq.prefetch_count is defined -%}
+{% endif %}
+{% if rmq.prefetch_count is defined %}
     prefetch_count: "{{ rmq.prefetch_count }}"
-{% endif -%}
-{% if rmq.tls is defined -%}
+{% endif %}
+{% if rmq.tls is defined %}
     tls: "{{ rmq.tls }}"
-{% endif -%}
+{% endif %}
 {% endfor %}
 
 transforms:
