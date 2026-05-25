@@ -13,8 +13,8 @@ jobs:
     strategy:
       matrix:
         target:
-          - types
-          - build
+          - pytypes
+          - pybuild
           - nox
     steps:
       - name: Run python ${{ matrix.target }}

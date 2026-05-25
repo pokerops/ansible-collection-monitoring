@@ -15,14 +15,14 @@ jobs:
         uses: pokerops/ansible-utils@master
         with:
           run: |
-            make install version
+            just install version
   consistency:
     runs-on: ubuntu-latest
     steps:
       - name: Run version consistency check
         uses: pokerops/ansible-utils@master
         with:
-          run: just install version
+          run: just install pyversion
   tag:
     runs-on: ubuntu-latest
     steps:
