@@ -18,7 +18,8 @@ sources:
     routing_key_field: "{{ rmq.routing_key_field }}"
 {% endif %}
 {% if rmq.decoding is defined %}
-    decoding: "{{ rmq.decoding }}"
+    decoding:
+      codec: "{{ rmq.decoding.codec }}"
 {% endif %}
 {% if rmq.framing is defined %}
     framing: "{{ rmq.framing }}"
@@ -36,11 +37,20 @@ transforms:
     type: "remap"
     inputs: ["rabbitmq_*"]
     source: |
-      .@timestamp = parse_timestamp!(.timestamp, format: "%+")
-      .agent.hostname = .agent.name
+      . = parse_json!(string!(.message))
+      if exists(.routing) {
+        .queue = .routing
+      }
+      if exists(.exchange) {
+        .exchange = .exchange
+      }
+      if exists(.timestamp) {
+        .@timestamp = parse_timestamp!(.timestamp, format: "%+")
+      }
       .fields.location = "{{ vector_rabbitmq_location }}"
       .fields.environment = "{{ vector_rabbitmq_environment}}"
       .fields.function = "{{ vector_rabbitmq_function }}"
+      del(.message)
 
 sinks:
   {% if beat_elasticsearch_hosts | length > 0 -%}

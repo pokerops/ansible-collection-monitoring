@@ -40,11 +40,11 @@
     - name: Run RabbitMQ docker container
       community.docker.docker_container:
         name: rabbitmq
-        image: rabbitmq:4-management
+        image: rabbitmq:3-management
         pull: true
         ports:
-          - "127.0.0.1:5672:5672"
-          - "127.0.0.1:15672:15672"
+          - "5672:5672"
+          - "15672:15672"
         env:
           RABBITMQ_DEFAULT_VHOST: "{{ rabbitmq_vhost }}"
           RABBITMQ_DEFAULT_USER: "{{ rabbitmq_user_name }}"
@@ -75,11 +75,36 @@
 
     - name: Create RabbitMQ queue
       community.rabbitmq.rabbitmq_queue:
-        name: "{{ rabbitmq_queue }}"
+        name: "{{ item }}"
         login_user: "{{ rabbitmq_user_name }}"
         login_password: "{{ rabbitmq_user_pass }}"
         login_host: localhost
         vhost: "{{ rabbitmq_vhost }}"
+      loop:
+        - "{{ rabbitmq_queue }}"
+        - "molecule"
+
+    - name: Create RabbitMQ exchange
+      community.rabbitmq.rabbitmq_exchange:
+        name: "{{ rabbitmq_queue }}_exchange"
+        type: fanout
+        login_user: "{{ rabbitmq_user_name }}"
+        login_password: "{{ rabbitmq_user_pass }}"
+        login_host: localhost
+        vhost: "{{ rabbitmq_vhost }}"
+
+    - name: Create RabbitMQ binding
+      community.rabbitmq.rabbitmq_binding:
+        name: "{{ rabbitmq_queue }}_exchange"
+        destination: "{{ item }}"
+        destination_type: queue
+        login_user: "{{ rabbitmq_user_name }}"
+        login_password: "{{ rabbitmq_user_pass }}"
+        login_host: localhost
+        vhost: "{{ rabbitmq_vhost }}"
+      loop:
+        - "{{ rabbitmq_queue }}"
+        - "molecule"
 
 - name: Import pokeops.monitoring install playbook
   ansible.builtin.import_playbook: pokerops.monitoring.install

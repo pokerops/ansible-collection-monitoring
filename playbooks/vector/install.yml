@@ -190,19 +190,28 @@
             _values_data: "{{ _rabbitmq | map(attribute='value') }}"
             _vhosts: "{{ _vhosts_dict | zip(_values_data) | map(_pairs) | map('map', 'combine') }}"
 
+        - name: Verify Vector rabbitmq monitor queue and exchange attrs
+          ansible.builtin.assert:
+            that:
+              - _queues | length == 0
+            fail_msg: "RabbitMQ vhosts cannot have both exchange and queue defined: [{{ _vhosts | join(', ') }}]"
+          vars:
+            _rabbitmq: "{{ _monitoring_rabbitmq_checks }}"
+            _exchanges: "{{ _rabbitmq | selectattr('exchange', 'defined') }}"
+            _queues: "{{ _exchanges | selectattr('queue', 'defined') }}"
+            _vhosts: "{{ _queues | map(attribute='vhost') }}"
+
         - name: Verify Vector rabbitmq monitor settings
           ansible.builtin.assert:
             that:
               - _username | length == 0
               - _password | length == 0
               - _host | length == 0
-              - (_rabbitmq | length) == (_unique_checks | length)
           vars:
             _rabbitmq: "{{ _monitoring_rabbitmq_checks }}"
             _username: "{{ _rabbitmq | rejectattr('username', 'defined') }}"
             _password: "{{ _rabbitmq | rejectattr('password', 'defined') }}"
             _host: "{{ _rabbitmq | rejectattr('host', 'defined') }}"
-            _unique_checks: "{{ _rabbitmq | unique }}"
 
         - name: Set RabbitMQ connection strings
           ansible.builtin.set_fact:
@@ -210,7 +219,6 @@
           vars:
             _default:
               vhost: "%2f"
-              timeout: 10
               port: 5672
               scheme: "amqp"
               consumer: "vector"
@@ -232,16 +240,9 @@
             _amqp_settings: "{{ _auths | map(_map_join, ['auth', 'server'], '@') }}"
             _amqp_dict: "{{ _amqp_settings | map(_to_dict, 'amqp') }}"
             _amqps: "{{ _auths | zip(_amqp_dict) | map('combine') }}"
-            _timeouts: "{{ _amqps | map(attribute='timeout') }}"
-            _timeouts_format: "{{ _timeouts | map(_map_format, 'timeout=%s') }}"
-            _timeouts_dict: "{{ _timeouts_format | map(_to_dict, 'timeout') }}"
-            _timeouts_overwritten: "{{ _amqps | zip(_timeouts_dict) | map('combine') }}"
-            _uri_settings: "{{ _timeouts_overwritten | map(_map_join, ['vhost', 'timeout'], '?') }}"
-            _uri_dict: "{{ _uri_settings | map(_to_dict, 'uri') }}"
-            _uris: "{{ _timeouts_overwritten | zip(_uri_dict) | map('combine') }}"
-            _connection_string_settings: "{{ _uris | map(_map_join, ['amqp', 'uri'], '/') }}"
+            _connection_string_settings: "{{ _amqps | map(_map_join, ['amqp', 'vhost'], '/') }}"
             _connection_strings_dict: "{{ _connection_string_settings | map(_to_dict, 'connection_string') }}"
-            _connection_strings: "{{ _uris | zip(_connection_strings_dict) | map('combine') }}"
+            _connection_strings: "{{ _amqps | zip(_connection_strings_dict) | map('combine') }}"
 
         - name: Deploy Vector rabbitmq monitor configuration
           ansible.builtin.template:
@@ -252,7 +253,6 @@
             mode: "0640"
           vars:
             vector_output_file_enable: "{{ monitoring_vector_output_file_enable }}"
-            vector_monitor_script_path: "{{ monitoring_script_path }}"
             vector_rabbitmq_index: "{{ monitoring_elasticsearch_index_rabbitmq }}"
             vector_rabbitmq_location: "{{ monitoring_agent_location }}"
             vector_rabbitmq_environment: "{{ monitoring_agent_environment }}"

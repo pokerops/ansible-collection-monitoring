@@ -118,12 +118,12 @@ provisioner:
             molecule:
               - username: "{{ rabbitmq_user_name }}"
                 password: "{{ rabbitmq_user_pass }}"
-                host: 127.0.0.1
+                host: "{{ inventory_hostname }}"
                 queue: "{{ rabbitmq_queue }}"
           rabbitmq_vhost: molecule
           rabbitmq_user_name: molecule
           rabbitmq_user_pass: molecule
-          rabbitmq_queue: molecule
+          rabbitmq_queue: vector
 
 verifier:
   name: ansible
