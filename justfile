@@ -24,7 +24,7 @@ pyrun *args:
   @uv --no-managed-python run python -m pokerops.monitoring {{args}}
 
 # Run all pytest checks
-test *args:
+pytest *args:
   @uv --no-managed-python run pytest {{args}}
 
 # Lint code with ruff
