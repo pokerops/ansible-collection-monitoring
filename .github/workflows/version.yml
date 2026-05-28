@@ -8,14 +8,6 @@ on:
 jobs:
   ansible:
     uses: pokerops/ansible-utils/.github/workflows/version.yml@master
-  python:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run python version check
-        uses: pokerops/ansible-utils@master
-        with:
-          run: |
-            just install version
   consistency:
     runs-on: ubuntu-latest
     steps:
