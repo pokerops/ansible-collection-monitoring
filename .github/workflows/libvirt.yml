@@ -26,11 +26,13 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Run make configure
-        run: >
-          just
-          --set GIT_REPO ${{ github.event.pull_request.head.repo.full_name }}
-          --set GIT_BRANCH ${{ github.head_ref || github.ref_name }}
-          configure
+        uses: pokerops/ansible-utils@master
+        with:
+          run: >
+            just
+            --set GIT_REPO ${{ github.event.pull_request.head.repo.full_name }}
+            --set GIT_BRANCH ${{ github.head_ref || github.ref_name }}
+            configure
 
       - name: Debug configuration changes
         run: git diff

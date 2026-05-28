@@ -64,7 +64,7 @@ defaults:
     exit 1;
   fi
 
-version:
+pyversion:
   #!/usr/bin/env bash
   ANSIBLE_VERSION=$(dasel -r yaml -f galaxy.yml .version | sed -e "s/^['\"]// ; s/['\"]$//")
   PYTHON_VERSION=$(dasel -r toml -f pyproject.toml .project.version | sed -e "s/^['\"]// ; s/['\"]$//")
