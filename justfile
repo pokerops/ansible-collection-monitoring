@@ -66,9 +66,9 @@ defaults:
 
 pyversion:
   #!/usr/bin/env bash
-  ANSIBLE_VERSION=$(dasel -r yaml -f galaxy.yml .version | sed -e "s/^['\"]// ; s/['\"]$//")
-  PYTHON_VERSION=$(dasel -r toml -f pyproject.toml .project.version | sed -e "s/^['\"]// ; s/['\"]$//")
-  REPO_VERSION=$(dasel -f roles/monitoring/defaults/main.yml .monitoring_script_repo_version | sed -e "s/^['\"]// ; s/['\"]$//")
+  ANSIBLE_VERSION=$(dasel -i yaml 'get("version")' < galaxy.yml | sed -e "s/^['\"]// ; s/['\"]$//")
+  PYTHON_VERSION=$(dasel -i toml 'project.version' < pyproject.toml | sed -e "s/^['\"]// ; s/['\"]$//")
+  REPO_VERSION=$(dasel -i yaml 'monitoring_script_repo_version' < roles/monitoring/defaults/main.yml  | sed -e "s/^['\"]// ; s/['\"]$//")
   if [ "${ANSIBLE_VERSION}" != "${PYTHON_VERSION}" ]; then
     echo "Python version '${PYTHON_VERSION}' and Ansible version '${ANSIBLE_VERSION}' do not match"
     exit 1
