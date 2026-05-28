@@ -52,7 +52,7 @@ nox-test session='tests -p':
   @uv run nox -s {{session}}
 
 # Build the package
-build:
+pybuild:
   @uv --no-managed-python build
 
 # Check default values

@@ -1,6 +1,6 @@
 [project]
 name = "pokerops-monitoring"
-version = "0.2.1"
+version = "0.2.2"
 description = "Pokerops monitoring scripts"
 readme = "python/README.md"
 authors = [{ name = "Ted Cook", email = "teodoro.cook@gmail.com" }]
