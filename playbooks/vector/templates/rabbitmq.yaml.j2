@@ -1,0 +1,77 @@
+---
+sources:
+{% for rmq in vector_rabbitmq_checks %}
+  rabbitmq_{{ loop.index0 }}:
+    type: "amqp"
+    connection_string: "{{ rmq.connection_string }}"
+    consumer: "{{ rmq.consumer }}"
+{% if rmq.exchange_key is defined %}
+    exchange_key: "{{ rmq.exchange_key }}"
+{% endif %}
+{% if rmq.offset_key is defined %}
+    offset_key: "{{ rmq.offset_key }}"
+{% endif %}
+{% if rmq.queue is defined %}
+    queue: "{{ rmq.queue }}"
+{% endif %}
+{% if rmq.routing_key_field is defined %}
+    routing_key_field: "{{ rmq.routing_key_field }}"
+{% endif %}
+{% if rmq.decoding is defined %}
+    decoding:
+      codec: "{{ rmq.decoding.codec }}"
+{% endif %}
+{% if rmq.framing is defined %}
+    framing: "{{ rmq.framing }}"
+{% endif %}
+{% if rmq.prefetch_count is defined %}
+    prefetch_count: "{{ rmq.prefetch_count }}"
+{% endif %}
+{% if rmq.tls is defined %}
+    tls: "{{ rmq.tls }}"
+{% endif %}
+{% endfor %}
+
+transforms:
+  rabbitmq_data:
+    type: "remap"
+    inputs: ["rabbitmq_*"]
+    source: |
+      . = parse_json!(string!(.message))
+      if exists(.routing) {
+        .queue = .routing
+      }
+      if exists(.exchange) {
+        .exchange = .exchange
+      }
+      if exists(.timestamp) {
+        .@timestamp = parse_timestamp!(.timestamp, format: "%+")
+      }
+      .fields.location = "{{ vector_rabbitmq_location }}"
+      .fields.environment = "{{ vector_rabbitmq_environment}}"
+      .fields.function = "{{ vector_rabbitmq_function }}"
+      del(.message)
+
+sinks:
+  {% if beat_elasticsearch_hosts | length > 0 -%}
+  rabbitmq_elasticsearch:
+    type: "elasticsearch"
+    api_version: "auto"
+    inputs: ["rabbitmq_data"]
+    endpoints: [{% for host in beat_elasticsearch_hosts %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    mode: "bulk"
+    auth:
+      strategy: "basic"
+      user: "{{ beat_elasticsearch_username }}"
+      password: "{{ beat_elasticsearch_password }}"
+    bulk:
+      index: "{{ vector_rabbitmq_index }}"
+  {% endif -%}
+  {% if vector_output_file_enable -%}
+  rabbitmq_file:
+    type: "file"
+    inputs: ["rabbitmq_data"]
+    path: "/var/log/vector/rabbitmq.log"
+    encoding:
+      codec: "json"
+  {%- endif %}

@@ -1,17 +1,30 @@
-install:
-  @make install
+set allow-duplicate-variables := true
+set allow-duplicate-recipes := true
+import '.devbox/virtenv/pokerops.ansible-utils.molecule/justfile'
+
+MOLECULE_SCENARIO := "legacy"
+MOLECULE_LOCAL_KUBECONFIG := `pwd` + "/.kubeconfig"
+
+GIT_REPO := `git config --get remote.origin.url | sed -E 's#https://github.com/##; s#^git@github.com:##; s#\.git$$##'`
+GIT_BRANCH := `git rev-parse --abbrev-ref HEAD`
 
 configure:
-  @make configure
+	@sed -i -e \
+		"s#\(monitoring_script_repo_url:\).*#\1 \"https://github.com/${GIT_REPO}.git\"#" \
+		roles/monitoring/defaults/main.yml
+	@sed -i -e \
+		"s#\(monitoring_script_repo_version:\).*#\1 \"${GIT_BRANCH}\"#" \
+		roles/monitoring/defaults/main.yml
 
-requirements:
-  @make requirements 
+kubectl:
+	@echo "Using kubeconfig: ${MOLECULE_LOCAL_KUBECONFIG}"
+	@kubectl --kubeconfig=${MOLECULE_LOCAL_KUBECONFIG} $(filter-out $@,$(MAKECMDGOALS))
 
-run *args:
+pyrun *args:
   @uv --no-managed-python run python -m pokerops.monitoring {{args}}
 
 # Run all pytest checks
-test *args:
+pytest *args:
   @uv --no-managed-python run pytest {{args}}
 
 # Lint code with ruff
@@ -51,7 +64,7 @@ defaults:
     exit 1;
   fi
 
-version:
+pyversion:
   #!/usr/bin/env bash
   ANSIBLE_VERSION=$(dasel -r yaml -f galaxy.yml .version | sed -e "s/^['\"]// ; s/['\"]$//")
   PYTHON_VERSION=$(dasel -r toml -f pyproject.toml .project.version | sed -e "s/^['\"]// ; s/['\"]$//")

@@ -151,3 +151,154 @@
       vars:
         _filesystem_events: "{{ filesystem_events }}"
         _filesystem_paths: "{{ _filesystem_events | map(attribute='filesystem.path') | unique }}"
+
+    - name: Record python interpreter path
+      ansible.builtin.set_fact:
+        _environment_python: "{{ ansible_facts.python.executable }}"
+
+    - name: Manage virtualenv tasks
+      block:
+        - name: Build Vector RabbitMQ fact
+          ansible.builtin.set_fact:
+            _monitoring_rabbitmq_checks: "{{ _connection_strings }}"
+          vars:
+            _map_join: "nephelaiio.plugins.map_join"
+            _to_dict: "nephelaiio.plugins.to_dict"
+            _map_format: "nephelaiio.plugins.map_format"
+            _pairs: "nephelaiio.plugins.pairs"
+            _cons: "nephelaiio.plugins.cons"
+            _default:
+              port: 5672
+              scheme: "amqp"
+              consumer: "vector"
+            _rabbitmq: "{{ monitoring_rabbitmq_checks | dict2items | sort(attribute='key') }}"
+            _vhosts_data: "{{ _rabbitmq | map(attribute='key') }}"
+            _vhosts_dict: "{{ _vhosts_data | map(_to_dict, 'vhost') | map(_cons) }}"
+            _values_data: "{{ _rabbitmq | map(attribute='value') }}"
+            _vhosts: "{{ _vhosts_dict | zip(_values_data) | map(_pairs) | map('map', 'combine') | flatten }}"
+            _checks_default: "{{ [_default] | product(_vhosts) | map('combine') }}"
+            _credentials_settings: "{{ _checks_default | map(_map_join, ['username', 'password'], ':') }}"
+            _credentials_dict: "{{ _credentials_settings | map(_to_dict, 'credentials') }}"
+            _credentials: "{{ _checks_default | zip(_credentials_dict) | map('combine') }}"
+            _schemes: "{{ _credentials | map(attribute='scheme') }}"
+            _schemes_format: "{{ _schemes | map(_map_format, '%s://') }}"
+            _schemes_dict: "{{ _schemes_format | map(_to_dict, 'scheme') }}"
+            _schemes_overwritten: "{{ _credentials | zip(_schemes_dict) | map('combine') }}"
+            _server_settings: "{{ _schemes_overwritten | map(_map_join, ['host', 'port'], ':') }}"
+            _servers_dict: "{{ _server_settings | map(_to_dict, 'server') }}"
+            _servers: "{{ _schemes_overwritten | zip(_servers_dict) | map('combine') }}"
+            _auth_settings: "{{ _servers | map(_map_join, ['scheme', 'credentials'], '') }}"
+            _auth_dict: "{{ _auth_settings | map(_to_dict, 'auth') }}"
+            _auths: "{{ _servers | zip(_auth_dict) | map('combine') }}"
+            _amqp_settings: "{{ _auths | map(_map_join, ['auth', 'server'], '@') }}"
+            _amqp_dict: "{{ _amqp_settings | map(_to_dict, 'amqp') }}"
+            _amqps: "{{ _auths | zip(_amqp_dict) | map('combine') }}"
+            _connection_string_settings: "{{ _amqps | map(_map_join, ['amqp', 'vhost'], '/') }}"
+            _connection_strings_dict: "{{ _connection_string_settings | map(_to_dict, 'connection_string') }}"
+            _connection_strings: "{{ _amqps | zip(_connection_strings_dict) | map('combine') }}"
+
+        - name: Install virtualenv packages
+          ansible.builtin.package:
+            name:
+              - virtualenv
+
+        - name: Create virtualenv
+          ansible.builtin.tempfile:
+            state: directory
+            suffix: virtualenv
+          register: _virtualenv_tmpdir
+
+        - name: Set virtualenv facts
+          ansible.builtin.set_fact:
+            _virtualenv_path: "{{ _path }}"
+            _virtualenv_python: "{{ _python }}"
+          vars:
+            _path: "{{ _virtualenv_tmpdir.path }}/venv"
+            _python: "{{ _path }}/bin/python"
+
+        - name: Initialize virtualenv
+          ansible.builtin.pip:
+            name:
+              - pika
+            virtualenv: "{{ _virtualenv_path }}"
+
+        - name: Drop vector RabbitMQ log file
+          ansible.builtin.file:
+            path: /var/log/vector/rabbitmq.log
+            state: absent
+
+        - name: Change python interpreter
+          ansible.builtin.set_fact:
+            ansible_python_interpreter: "{{ _virtualenv_python }}"
+
+        - name: Publish a test message
+          community.rabbitmq.rabbitmq_publish:
+            exchange: "{{ rabbitmq_queue }}_exchange"
+            routing_key: "{{ rabbitmq_queue }}.routing.key"
+            url: "{{ item.connection_string }}"
+            body: "{{ _message | to_json }}"
+            content_type: "application/json"
+            durable: true
+          vars:
+            _message:
+              text: "This is a test message"
+              date: "{{ ansible_date_time.iso8601 }}"
+          loop_control:
+            label: "{{ item.vhost }} - {{ item.queue }}"
+          loop: "{{ _monitoring_rabbitmq_checks }}"
+
+        - name: Pause for 15 seconds to allow RabbitMQ receive message
+          ansible.builtin.pause:
+            seconds: 15
+
+        - name: Query RabbitMQ messages
+          ansible.builtin.set_fact:
+            rabbitmq_query: "{{ lookup('community.rabbitmq.rabbitmq', url=_url, queue='molecule') }}"
+          vars:
+            _rabbitmq: "{{ _monitoring_rabbitmq_checks | first }}"
+            _url: "{{ _rabbitmq['connection_string'] }}"
+
+        - name: Slurp rabbitmq events
+          ansible.builtin.slurp:
+            src: /var/log/vector/rabbitmq.log
+          register: rabbitmq_process_log
+
+        - name: Decode rabbitmq events
+          ansible.builtin.set_fact:
+            rabbitmq_events: "{{ _event_lines | map('from_json') }}"
+          vars:
+            _event_lines: "{{ rabbitmq_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
+
+        - name: Debug RabbitMQ query
+          ansible.builtin.debug:
+            var: rabbitmq_query
+
+        - name: Debug RabbitMQ Vector log file
+          ansible.builtin.debug:
+            msg: "{{ rabbitmq_events }}"
+
+        - name: Verify rabbitmq log ingest
+          ansible.builtin.assert:
+            that:
+              - (_match_keys | length) == (_query_keys | length)
+              - _events_data == _query_data
+          vars:
+            _input: "{{ _monitoring_rabbitmq_checks }}"
+            _input_queues: "{{ _input | map(attribute='queue') }}"
+            _events: "{{ rabbitmq_events }}"
+            _query: "{{ rabbitmq_query }}"
+            _query_keys: "{{ _query | map(attribute='json') | map('dict2items') | flatten | map(attribute='key') | unique }}"
+            _event_keys: "{{ _events | map('dict2items') | flatten | map(attribute='key') | unique }}"
+            _match_keys: "{{ _event_keys | select('in', _query_keys) }}"
+            _events_data: "{{ _events | map('nephelaiio.plugins.select_attributes', _match_keys) }}"
+            _query_data: "{{ _query | map(attribute='json') }}"
+
+      always:
+        - name: Restore python interpreter
+          ansible.builtin.set_fact:
+            ansible_python_interpreter: "{{ _environment_python }}"
+
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent

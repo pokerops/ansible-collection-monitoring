@@ -12,6 +12,7 @@ dist/
 .molecule/
 ansible_collections/
 libvirt/
+.pyre/
 
 # globs
 **/__pycache__/**

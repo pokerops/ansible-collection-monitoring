@@ -20,4 +20,4 @@ jobs:
       - name: Run python ${{ matrix.target }}
         uses: pokerops/ansible-utils@master
         with:
-          run: just install ${{ matrix.target}}
+          run: just install ${{ matrix.target }}

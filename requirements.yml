@@ -1,4 +1,6 @@
 ---
+roles:
+  - name: nephelaiio.docker
 collections:
   - name: pokerops.monitoring
     source: .
@@ -7,3 +9,5 @@ collections:
   - name: nephelaiio.plugins
   - name: nephelaiio.libvirt
   - name: ansible.utils
+  - name: community.rabbitmq
+  - name: community.docker

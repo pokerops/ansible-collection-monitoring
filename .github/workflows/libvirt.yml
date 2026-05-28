@@ -25,15 +25,14 @@ jobs:
       - name: Check out the codebase
         uses: actions/checkout@v5
 
-      - name: Run make configure
-        run: make configure
-          GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}
-          GIT_BRANCH=${{ github.head_ref || github.ref_name }}
-
-      - name: Run make configure
-        run: make configure
-          GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}
-          GIT_BRANCH=${{ github.head_ref || github.ref_name }}
+      - name: Run just configure
+        uses: pokerops/ansible-utils@master
+        with:
+          run: >
+            just
+            --set GIT_REPO ${{ github.event.pull_request.head.repo.full_name }}
+            --set GIT_BRANCH ${{ github.head_ref || github.ref_name }}
+            configure
 
       - name: Debug configuration changes
         run: git diff
@@ -42,11 +41,12 @@ jobs:
         uses: pokerops/ansible-utils@master
         with:
           checkout: false
-          run: |
-            make requirements test
-              MOLECULE_LOGDIR=${{ env.MOLECULE_LOGDIR }}
-              MOLECULE_SCENARIO=${{ matrix.scenario }}
-              MOLECULE_KVM_IMAGE=${{ matrix.image }}
+          run: >
+            just
+            --set MOLECULE_LOGDIR ${{ env.MOLECULE_LOGDIR }}
+            --set MOLECULE_SCENARIO ${{ matrix.scenario }}
+            --set MOLECULE_KVM_IMAGE ${{ matrix.image }}
+            requirements test
 
       - name: Upload install logs
         uses: actions/upload-artifact@v4

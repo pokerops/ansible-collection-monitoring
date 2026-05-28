@@ -5,6 +5,12 @@
   roles:
     - pokerops.monitoring.monitoring
   tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_facts.os_family == "Debian"
+      changed_when: false
+
     - name: Install virtualenv packages
       ansible.builtin.package:
         name:

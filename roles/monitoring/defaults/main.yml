@@ -41,6 +41,7 @@ monitoring_elasticsearch_index_metricbeat: metricbeat
 monitoring_elasticsearch_index_heartbeat: heartbeat
 monitoring_elasticsearch_index_ntp: ntp
 monitoring_elasticsearch_index_filesystem: filesystem
+monitoring_elasticsearch_index_rabbitmq: rabbitmq
 
 monitoring_beats_package_state: present
 monitoring_beats_conf_setup:
@@ -96,3 +97,4 @@ monitoring_heartbeat_conf_output:
   logstash.hosts: ["localhost:{{ monitoring_vector_heartbeat_port }}"]
 
 monitoring_filesystem_checks: []
+monitoring_rabbitmq_checks: {}
