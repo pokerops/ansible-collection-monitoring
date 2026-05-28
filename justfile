@@ -24,19 +24,19 @@ pyrun *args:
   @uv --no-managed-python run python -m pokerops.monitoring {{args}}
 
 # Run all pytest checks
-pytest *args:
+test *args:
   @uv --no-managed-python run pytest {{args}}
 
 # Lint code with ruff
-pylint *args:
+lint *args:
   @uv --no-managed-python run ruff check {{args}} python/src python/tests
 
 # Format code with ruff
-pyformat *args:
+format *args:
   @uv --no-managed-python run ruff format {{args}} python/src python/tests
 
 # Type check with pyright
-pytypes *args:
+types *args:
   @uv --no-managed-python run pyright {{args}}
 
 # Run nox (all sessions) - uv manages Python versions
@@ -64,7 +64,7 @@ defaults:
     exit 1;
   fi
 
-pyversion:
+version:
   #!/usr/bin/env bash
   ANSIBLE_VERSION=$(dasel -r yaml -f galaxy.yml .version | sed -e "s/^['\"]// ; s/['\"]$//")
   PYTHON_VERSION=$(dasel -r toml -f pyproject.toml .project.version | sed -e "s/^['\"]// ; s/['\"]$//")
