@@ -14,7 +14,7 @@ jobs:
       matrix:
         target:
           - types
-          - build
+          - pybuild
           - nox
     steps:
       - name: Run python ${{ matrix.target }}
