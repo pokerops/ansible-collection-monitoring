@@ -46,6 +46,8 @@ transforms:
       }
       if exists(.timestamp) {
         .@timestamp = parse_timestamp!(.timestamp, format: "%+")
+      } else {
+        .@timestamp = parse_timestamp!(now(), format: "%+")
       }
       .fields.location = "{{ vector_rabbitmq_location }}"
       .fields.environment = "{{ vector_rabbitmq_environment}}"
