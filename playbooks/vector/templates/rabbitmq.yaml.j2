@@ -50,6 +50,7 @@ transforms:
       .fields.location = "{{ vector_rabbitmq_location }}"
       .fields.environment = "{{ vector_rabbitmq_environment}}"
       .fields.function = "{{ vector_rabbitmq_function }}"
+      .@timestamp = parse_timestamp!(now(), format: "%+")
       del(.message)
 
 sinks:
