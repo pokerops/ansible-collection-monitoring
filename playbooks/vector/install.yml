@@ -263,6 +263,26 @@
             beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"
           notify: vector_reload
 
+    - name: Deploy Vector configuration for internal logs
+      ansible.builtin.copy:
+        dest: "{{ monitoring_vector_conf_path }}/vector.yaml"
+        content: |
+          sources:
+            vector_logs:
+              type: "internal_logs"
+          sinks:
+            vector_logs_file:
+              type: "file"
+              inputs: ["vector_logs"]
+              path: "/var/log/vector/vector.log"
+              encoding:
+                codec: "json"
+                timestamp_format: "rfc3339"
+        owner: vector
+        group: vector
+        mode: "0640"
+      notify: vector_reload
+
     - name: Validate Vector configuration
       ansible.builtin.command:
         cmd: "/usr/bin/vector validate --config-dir {{ monitoring_vector_conf_path }}"
