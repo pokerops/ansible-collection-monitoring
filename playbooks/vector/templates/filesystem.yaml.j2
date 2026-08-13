@@ -17,13 +17,16 @@ sources:
       "--function {{ vector_filesystem_function }}",
       "--ctime {{ fs.ctime | default(-1) }}",
       {% if 'mtime' in fs %}
-        "--mtime {{ fs.mtime }}",
+      "--mtime {{ fs.mtime }}",
       {% endif %}
       {% if 'size' in fs %}
-        "--size {{ fs.size }}",
+      "--size {{ fs.size }}",
       {% endif %}
       {% if 'recursive' in fs and fs.recursive %}
-        "--recursive",
+      "--recursive",
+      {% endif %}
+      {% if 'name' in fs %}
+      "--name {{ fs.name }}",
       {% endif %}
       "{{ fs.path }}"
     ]

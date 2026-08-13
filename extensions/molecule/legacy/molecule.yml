@@ -110,6 +110,7 @@ provisioner:
             - path: "{{ molecule_tmpdir[0] }}"
               recursive: true
               interval: 10
+              name: "*.txt"
             - path: "{{ molecule_tmpdir[1] }}"
               recursive: true
               interval: 10
