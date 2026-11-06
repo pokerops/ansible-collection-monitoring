@@ -21,7 +21,7 @@ jobs:
           - name: trixie
             url: https://cloud.debian.org/images/cloud/trixie/latest/debian-13-nocloud-amd64.qcow2
         scenario:
-          - default
+          - legacy
     env:
       MOLECULE_LOGDIR: "/tmp/logs"
     steps:
