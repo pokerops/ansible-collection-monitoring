@@ -22,23 +22,23 @@ kubectl:
 	@kubectl --kubeconfig=${MOLECULE_LOCAL_KUBECONFIG} $(filter-out $@,$(MAKECMDGOALS))
 
 pyrun *args:
-  @uv --no-managed-python run python -m pokerops.monitoring {{args}}
+  @uv --python-preference=only-managed run python -m pokerops.monitoring {{args}}
 
 # Run all pytest checks
 pytest *args:
-  @uv --no-managed-python run pytest {{args}}
+  @uv --python-preference=only-managed run pytest {{args}}
 
 # Lint code with ruff
 lint *args:
-  @uv --no-managed-python run ruff check {{args}} python/src python/tests
+  @uv --python-preference=only-managed run ruff check {{args}} python/src python/tests
 
 # Format code with ruff
 format *args:
-  @uv --no-managed-python run ruff format {{args}} python/src python/tests
+  @uv --python-preference=only-managed run ruff format {{args}} python/src python/tests
 
 # Type check with pyright
 types *args:
-  @uv --no-managed-python run pyright {{args}}
+  @uv --python-preference=only-managed run pyright {{args}}
 
 # Run nox (all sessions) - uv manages Python versions
 nox *args='-p':
@@ -54,7 +54,7 @@ nox-test session='tests -p':
 
 # Build the package
 pybuild:
-  @uv --no-managed-python build
+  @uv --python-preference=only-managed build
 
 # Check default values
 defaults:
