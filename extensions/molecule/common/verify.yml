@@ -253,7 +253,7 @@
 
         - name: Query RabbitMQ messages
           ansible.builtin.set_fact:
-            rabbitmq_query: "{{ lookup('community.rabbitmq.rabbitmq', url=_url, queue='molecule') }}"
+            rabbitmq_query: "{{ lookup('community.rabbitmq.rabbitmq', url=_url, queue=rabbitmq_queue_molecule) }}"
           vars:
             _rabbitmq: "{{ _monitoring_rabbitmq_checks | first }}"
             _url: "{{ _rabbitmq['connection_string'] }}"

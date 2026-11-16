@@ -20,16 +20,6 @@
         name: python-is-python3
       when: ansible_facts.os_family == 'Debian'
 
-    - name: Disable ipv6
-      ansible.posix.sysctl:
-        name: "{{ item }}"
-        value: 1
-        sysctl_set: true
-      loop:
-        - net.ipv6.conf.all.disable_ipv6
-        - net.ipv6.conf.default.disable_ipv6
-        - net.ipv6.conf.lo.disable_ipv6
-
     - name: Install multipath tools
       ansible.builtin.package:
         name: "{{ (ansible_facts.os_family == 'Debian') | ternary(_multipath_deb, _multipath_rpm) }}"
@@ -41,6 +31,26 @@
       ansible.builtin.lineinfile:
         path: /etc/hosts
         regexp: ".*{{ _api_hostname }}.*"
-        line: "{{ ansible_facts.default_ipv4.address }} {{ _api_hostname }}"
+        line: "{{ _api_address }} {{ _api_hostname }}"
       vars:
         _api_hostname: "{{ rke2_api_url | urlsplit('hostname') }}"
+        _api_address: "{{ rke2_kubevip_address | default(ansible_facts.default_ipv4.address) }}"
+
+- name: Deploy rke2 cluster
+  import_playbook: pokerops.rke2.install
+
+- name: Copy rke2 kubeconfig
+  hosts: rke2_server
+  run_once: true
+  tasks:
+    - name: Fetch kubeconfig
+      ansible.builtin.slurp:
+        src: /etc/rancher/rke2/rke2.yaml
+      register: kubeconfig_query
+      become: true
+
+    - name: Write kubeconfig
+      ansible.builtin.copy:
+        content: "{{ kubeconfig_query.content | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: ' ~ rke2_api_url) }}"
+        dest: "{{ molecule_local_kubeconfig }}"
+      delegate_to: localhost

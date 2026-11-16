@@ -13,10 +13,7 @@ transforms:
       # Convert server_time to ISO8601 format
       .@timestamp = parse_timestamp!(.timestamp, format: "%+")
       .agent.hostname = .agent.name
-{% filter indent(width=2, first=True) %}
-{% block transforms %}
-{% endblock transforms %}
-{% endfilter %}
+{% block transforms %}{% endblock transforms %}
 
 sinks:
   {% if beat_elasticsearch_hosts | length > 0 -%}

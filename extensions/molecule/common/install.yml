@@ -36,74 +36,141 @@
         state: touch
       loop: "{{ molecule_tmpdir }}"
 
-    - name: Run RabbitMQ docker container
-      community.docker.docker_container:
-        name: rabbitmq
-        image: rabbitmq:3-management
-        pull: true
-        ports:
-          - "5672:5672"
-          - "15672:15672"
-        env:
-          RABBITMQ_DEFAULT_VHOST: "{{ rabbitmq_vhost }}"
-          RABBITMQ_DEFAULT_USER: "{{ rabbitmq_user_name }}"
-          RABBITMQ_DEFAULT_PASS: "{{ rabbitmq_user_pass }}"
+    - name: Create RabbitMQ server
+      delegate_to: localhost
+      become: false
+      run_once: true
+      block:
+        - name: Deploy RabbitMQ to the RKE2 cluster
+          kubernetes.core.k8s:
+            kubeconfig: "{{ molecule_local_kubeconfig }}"
+            state: present
+            wait: true
+            wait_timeout: 300
+            definition: "{{ item }}"
+          loop:
+            - apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: rabbitmq
+            - apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: rabbitmq
+                namespace: rabbitmq
+              spec:
+                replicas: 1
+                selector:
+                  matchLabels:
+                    app: rabbitmq
+                template:
+                  metadata:
+                    labels:
+                      app: rabbitmq
+                  spec:
+                    containers:
+                      - name: rabbitmq
+                        image: rabbitmq:3-management
+                        ports:
+                          - name: amqp
+                            containerPort: 5672
+                          - name: management
+                            containerPort: 15672
+                        env:
+                          - name: RABBITMQ_DEFAULT_VHOST
+                            value: "{{ rabbitmq_vhost }}"
+                          - name: RABBITMQ_DEFAULT_USER
+                            value: "{{ rabbitmq_user_name }}"
+                          - name: RABBITMQ_DEFAULT_PASS
+                            value: "{{ rabbitmq_user_pass }}"
+                        readinessProbe:
+                          exec:
+                            command: ["rabbitmq-diagnostics", "-q", "ping"]
+                          initialDelaySeconds: 10
+                          periodSeconds: 5
+            - apiVersion: v1
+              kind: Service
+              metadata:
+                name: rabbitmq
+                namespace: rabbitmq
+              spec:
+                type: NodePort
+                selector:
+                  app: rabbitmq
+                ports:
+                  - name: amqp
+                    port: 5672
+                    targetPort: amqp
+                    nodePort: "{{ rabbitmq_port }}"
+                  - name: management
+                    port: 15672
+                    targetPort: management
+                    nodePort: "{{ rabbitmq_api_port }}"
 
-    - name: Wait for RabbitMQ
-      ansible.builtin.wait_for:
-        host: localhost
-        port: 5672
-        state: started
-        timeout: 5
-      register: _rabbitmq_status
-      retries: 5
-      delay: 5
-      until: _rabbitmq_status is success
+        - name: Wait for RabbitMQ
+          ansible.builtin.wait_for:
+            host: "{{ rabbitmq_host }}"
+            port: "{{ rabbitmq_api_port }}"
+            state: started
+            timeout: 5
+          register: _rabbitmq_status
+          retries: 12
+          delay: 5
+          until: _rabbitmq_status is success
 
-    - name: Ensure RabbitMQ is up
-      community.rabbitmq.rabbitmq_vhost:
-        login_user: "{{ rabbitmq_user_name }}"
-        login_password: "{{ rabbitmq_user_pass }}"
-        login_host: localhost
-        name: "{{ rabbitmq_vhost }}"
-        state: present
-      register: _rabbitmq_status
-      retries: 5
-      delay: 5
-      until: _rabbitmq_status is success
+        - name: Ensure RabbitMQ is up
+          community.rabbitmq.rabbitmq_vhost:
+            login_user: "{{ rabbitmq_user_name }}"
+            login_password: "{{ rabbitmq_user_pass }}"
+            login_host: "{{ rabbitmq_host }}"
+            login_port: "{{ rabbitmq_api_port }}"
+            name: "{{ rabbitmq_vhost }}"
+            state: present
+          register: _rabbitmq_status
+          retries: 5
+          delay: 5
+          until: _rabbitmq_status is success
 
-    - name: Create RabbitMQ queue
-      community.rabbitmq.rabbitmq_queue:
-        name: "{{ item }}"
-        login_user: "{{ rabbitmq_user_name }}"
-        login_password: "{{ rabbitmq_user_pass }}"
-        login_host: localhost
-        vhost: "{{ rabbitmq_vhost }}"
-      loop:
-        - "{{ rabbitmq_queue }}"
-        - "molecule"
+        # Queues and exchanges are per host so that each Vector agent
+        # receives its own copy of every published message
+        - name: Create RabbitMQ queues
+          community.rabbitmq.rabbitmq_queue:
+            name: "{{ item }}"
+            login_user: "{{ rabbitmq_user_name }}"
+            login_password: "{{ rabbitmq_user_pass }}"
+            login_host: "{{ rabbitmq_host }}"
+            login_port: "{{ rabbitmq_api_port }}"
+            vhost: "{{ rabbitmq_vhost }}"
+          loop: "{{ _rabbitmq_queues }}"
 
-    - name: Create RabbitMQ exchange
-      community.rabbitmq.rabbitmq_exchange:
-        name: "{{ rabbitmq_queue }}_exchange"
-        type: fanout
-        login_user: "{{ rabbitmq_user_name }}"
-        login_password: "{{ rabbitmq_user_pass }}"
-        login_host: localhost
-        vhost: "{{ rabbitmq_vhost }}"
+        - name: Create RabbitMQ exchanges
+          community.rabbitmq.rabbitmq_exchange:
+            name: "{{ hostvars[item].rabbitmq_queue }}_exchange"
+            type: fanout
+            login_user: "{{ rabbitmq_user_name }}"
+            login_password: "{{ rabbitmq_user_pass }}"
+            login_host: "{{ rabbitmq_host }}"
+            login_port: "{{ rabbitmq_api_port }}"
+            vhost: "{{ rabbitmq_vhost }}"
+          loop: "{{ ansible_play_hosts_all }}"
 
-    - name: Create RabbitMQ binding
-      community.rabbitmq.rabbitmq_binding:
-        name: "{{ rabbitmq_queue }}_exchange"
-        destination: "{{ item }}"
-        destination_type: queue
-        login_user: "{{ rabbitmq_user_name }}"
-        login_password: "{{ rabbitmq_user_pass }}"
-        login_host: localhost
-        vhost: "{{ rabbitmq_vhost }}"
-      loop:
-        - "{{ rabbitmq_queue }}"
-        - "molecule"
+        - name: Create RabbitMQ bindings
+          community.rabbitmq.rabbitmq_binding:
+            name: "{{ hostvars[item.0].rabbitmq_queue }}_exchange"
+            destination: "{{ hostvars[item.0][item.1] }}"
+            destination_type: queue
+            login_user: "{{ rabbitmq_user_name }}"
+            login_password: "{{ rabbitmq_user_pass }}"
+            login_host: "{{ rabbitmq_host }}"
+            login_port: "{{ rabbitmq_api_port }}"
+            vhost: "{{ rabbitmq_vhost }}"
+          loop: "{{ ansible_play_hosts_all | product(['rabbitmq_queue', 'rabbitmq_queue_molecule']) | list }}"
+          loop_control:
+            label: "{{ item.0 }} - {{ item.1 }}"
+      vars:
+        _rabbitmq_queues: >-
+          {{ ansible_play_hosts_all | map('extract', hostvars, 'rabbitmq_queue') | list
+             + ansible_play_hosts_all | map('extract', hostvars, 'rabbitmq_queue_molecule') | list }}
 
 - name: Import pokeops.monitoring install playbook
   ansible.builtin.import_playbook: pokerops.monitoring.install
