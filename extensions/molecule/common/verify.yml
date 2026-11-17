@@ -231,18 +231,20 @@
           ansible.builtin.set_fact:
             ansible_python_interpreter: "{{ _virtualenv_python }}"
 
+        - name: Build RabbitMQ test message
+          ansible.builtin.set_fact:
+            _rabbitmq_message:
+              text: "This is a test message"
+              date: "{{ ansible_date_time.iso8601 }}"
+
         - name: Publish a test message
           community.rabbitmq.rabbitmq_publish:
             exchange: "{{ rabbitmq_queue }}_exchange"
             routing_key: "{{ rabbitmq_queue }}.routing.key"
             url: "{{ item.connection_string }}"
-            body: "{{ _message | to_json }}"
+            body: "{{ _rabbitmq_message | to_json }}"
             content_type: "application/json"
             durable: true
-          vars:
-            _message:
-              text: "This is a test message"
-              date: "{{ ansible_date_time.iso8601 }}"
           loop_control:
             label: "{{ item.vhost }} - {{ item.queue }}"
           loop: "{{ _monitoring_rabbitmq_checks }}"
@@ -250,13 +252,6 @@
         - name: Pause for 15 seconds to allow RabbitMQ receive message
           ansible.builtin.pause:
             seconds: 15
-
-        - name: Query RabbitMQ messages
-          ansible.builtin.set_fact:
-            rabbitmq_query: "{{ lookup('community.rabbitmq.rabbitmq', url=_url, queue=rabbitmq_queue_molecule) }}"
-          vars:
-            _rabbitmq: "{{ _monitoring_rabbitmq_checks | first }}"
-            _url: "{{ _rabbitmq['connection_string'] }}"
 
         - name: Slurp rabbitmq events
           ansible.builtin.slurp:
@@ -269,10 +264,6 @@
           vars:
             _event_lines: "{{ rabbitmq_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
 
-        - name: Debug RabbitMQ query
-          ansible.builtin.debug:
-            var: rabbitmq_query
-
         - name: Debug RabbitMQ Vector log file
           ansible.builtin.debug:
             msg: "{{ rabbitmq_events }}"
@@ -280,18 +271,14 @@
         - name: Verify rabbitmq log ingest
           ansible.builtin.assert:
             that:
-              - (_match_keys | length) == (_query_keys | length)
-              - _events_data == _query_data
+              - _matches | length == _monitoring_rabbitmq_checks | length
+            fail_msg: "Expected {{ _monitoring_rabbitmq_checks | length }} Vector event(s) matching the published message, found {{ _matches | length }}"
           vars:
-            _input: "{{ _monitoring_rabbitmq_checks }}"
-            _input_queues: "{{ _input | map(attribute='queue') }}"
-            _events: "{{ rabbitmq_events }}"
-            _query: "{{ rabbitmq_query }}"
-            _query_keys: "{{ _query | map(attribute='json') | map('dict2items') | flatten | map(attribute='key') | unique }}"
-            _event_keys: "{{ _events | map('dict2items') | flatten | map(attribute='key') | unique }}"
-            _match_keys: "{{ _event_keys | select('in', _query_keys) }}"
-            _events_data: "{{ _events | map('nephelaiio.plugins.select_attributes', _match_keys) }}"
-            _query_data: "{{ _query | map(attribute='json') }}"
+            _matches: >-
+              {{ rabbitmq_events
+                 | selectattr('text', 'defined') | selectattr('text', 'equalto', _rabbitmq_message.text)
+                 | selectattr('date', 'defined') | selectattr('date', 'equalto', _rabbitmq_message.date)
+                 | list }}
 
       always:
         - name: Restore python interpreter

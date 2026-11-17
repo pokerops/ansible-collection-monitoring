@@ -146,7 +146,6 @@ provisioner:
           rabbitmq_user_name: molecule
           rabbitmq_user_pass: molecule
           rabbitmq_queue: "vector-{{ inventory_hostname }}"
-          rabbitmq_queue_molecule: "molecule-{{ inventory_hostname }}"
           rabbitmq_host: "{{ rke2_kubevip_address }}"
           rabbitmq_port: 30672
           rabbitmq_api_port: 31672

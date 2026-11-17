@@ -83,11 +83,14 @@
                             value: "{{ rabbitmq_user_name }}"
                           - name: RABBITMQ_DEFAULT_PASS
                             value: "{{ rabbitmq_user_pass }}"
+                        # tcp probe instead of an exec of rabbitmq-diagnostics, which
+                        # exceeds the probe timeout under load and drops the service endpoint
                         readinessProbe:
-                          exec:
-                            command: ["rabbitmq-diagnostics", "-q", "ping"]
+                          tcpSocket:
+                            port: amqp
                           initialDelaySeconds: 10
                           periodSeconds: 5
+                          failureThreshold: 6
             - apiVersion: v1
               kind: Service
               metadata:
@@ -141,7 +144,7 @@
             login_host: "{{ rabbitmq_host }}"
             login_port: "{{ rabbitmq_api_port }}"
             vhost: "{{ rabbitmq_vhost }}"
-          loop: "{{ _rabbitmq_queues }}"
+          loop: "{{ ansible_play_hosts_all | map('extract', hostvars, 'rabbitmq_queue') | list }}"
 
         - name: Create RabbitMQ exchanges
           community.rabbitmq.rabbitmq_exchange:
@@ -164,13 +167,41 @@
             login_host: "{{ rabbitmq_host }}"
             login_port: "{{ rabbitmq_api_port }}"
             vhost: "{{ rabbitmq_vhost }}"
-          loop: "{{ ansible_play_hosts_all | product(['rabbitmq_queue', 'rabbitmq_queue_molecule']) | list }}"
+          loop: "{{ ansible_play_hosts_all | product(['rabbitmq_queue']) | list }}"
           loop_control:
             label: "{{ item.0 }} - {{ item.1 }}"
-      vars:
-        _rabbitmq_queues: >-
-          {{ ansible_play_hosts_all | map('extract', hostvars, 'rabbitmq_queue') | list
-             + ansible_play_hosts_all | map('extract', hostvars, 'rabbitmq_queue_molecule') | list }}
+
+    - name: Verify RabbitMQ AMQP endpoint from guests
+      block:
+        - name: Wait for RabbitMQ AMQP port
+          ansible.builtin.wait_for:
+            host: "{{ rabbitmq_host }}"
+            port: "{{ rabbitmq_port }}"
+            state: started
+            timeout: 5
+          register: _rabbitmq_amqp
+          retries: 24
+          delay: 5
+          until: _rabbitmq_amqp is success
+      rescue:
+        - name: Collect RabbitMQ connectivity diagnostics
+          ansible.builtin.shell:
+            cmd: |
+              echo "# listeners"; ss -ltn
+              echo "# addresses"; ip -br addr
+              echo "# nat rules for {{ rabbitmq_port }}"; iptables-save -t nat | grep -E "{{ rabbitmq_port }}" || true
+              echo "# connect {{ rabbitmq_host }}:{{ rabbitmq_port }}"; timeout 5 bash -c 'echo > /dev/tcp/{{ rabbitmq_host }}/{{ rabbitmq_port }}' 2>&1 || true
+          register: _rabbitmq_diagnostics
+          changed_when: false
+          failed_when: false
+
+        - name: Show RabbitMQ connectivity diagnostics
+          ansible.builtin.debug:
+            var: _rabbitmq_diagnostics.stdout_lines
+
+        - name: Fail RabbitMQ AMQP endpoint check
+          ansible.builtin.fail:
+            msg: "RabbitMQ AMQP endpoint {{ rabbitmq_host }}:{{ rabbitmq_port }} is unreachable from {{ inventory_hostname }}"
 
 - name: Import pokeops.monitoring install playbook
   ansible.builtin.import_playbook: pokerops.monitoring.install
