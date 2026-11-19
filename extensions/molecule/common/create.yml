@@ -25,24 +25,5 @@
         line: "{{ _api_address }} {{ _api_hostname }}"
       vars:
         _api_hostname: "{{ rke2_api_url | urlsplit('hostname') }}"
-        _api_address: "{{ hostvars[groups['rke2_server'].0]['ansible_default_ipv4']['address'] }}"
+        _api_address: "{{ rke2_kubevip_address | default(hostvars[groups['rke2_server'].0]['ansible_default_ipv4']['address']) }}"
       when: "'rke2_server' in groups and groups['rke2_server'] | length > 0"
-
-- name: Deploy rke2 cluster
-  import_playbook: pokerops.rke2.install
-
-- name: Copy rke2 kubeconfig
-  hosts: rke2_server
-  run_once: true
-  tasks:
-    - name: Fetch kubeconfig
-      ansible.builtin.slurp:
-        src: /etc/rancher/rke2/rke2.yaml
-      register: kubeconfig_query
-      become: true
-
-    - name: Write kubeconfig
-      ansible.builtin.copy:
-        content: "{{ kubeconfig_query.content | b64decode }}"
-        dest: "{{ molecule_local_kubeconfig }}"
-      delegate_to: localhost
