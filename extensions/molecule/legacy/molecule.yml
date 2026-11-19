@@ -71,7 +71,16 @@ provisioner:
           rke2_token: "secret"
           rke2_kubevip_address: "{{ molecule_api_vip }}"
           rke2_longhorn_replica_count: 2
+          # RabbitMQ test params
+          rabbitmq_vhost: molecule
+          rabbitmq_user_name: molecule
+          rabbitmq_user_pass: molecule
+          rabbitmq_queue: "vector-{{ inventory_hostname }}"
+          rabbitmq_host: "{{ rke2_kubevip_address }}"
+          rabbitmq_port: 30672
+          rabbitmq_api_port: 31672
           # Monitoring params
+          monitoring_mode_legacy: true
           monitoring_vector_output_file_enable: true
           monitoring_agent_location: "local"
           monitoring_agent_environment: "molecule"
@@ -142,13 +151,6 @@ provisioner:
                 host: "{{ rabbitmq_host }}"
                 port: "{{ rabbitmq_port }}"
                 queue: "{{ rabbitmq_queue }}"
-          rabbitmq_vhost: molecule
-          rabbitmq_user_name: molecule
-          rabbitmq_user_pass: molecule
-          rabbitmq_queue: "vector-{{ inventory_hostname }}"
-          rabbitmq_host: "{{ rke2_kubevip_address }}"
-          rabbitmq_port: 30672
-          rabbitmq_api_port: 31672
 
 verifier:
   name: ansible

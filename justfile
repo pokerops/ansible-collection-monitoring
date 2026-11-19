@@ -5,6 +5,7 @@ import '.devbox/virtenv/pokerops.ansible-utils.molecule/justfile'
 
 MOLECULE_SCENARIO := "legacy"
 MOLECULE_LOCAL_KUBECONFIG := `pwd` + "/.kubeconfig"
+MOLECULE_KVM_IMAGE := 'https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img'
 
 GIT_REPO := `git config --get remote.origin.url | sed -E 's#https://github.com/##; s#^git@github.com:##; s#\.git$$##'`
 GIT_BRANCH := `git rev-parse --abbrev-ref HEAD`
