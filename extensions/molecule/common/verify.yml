@@ -1,4 +1,40 @@
 ---
+- name: Verify load balancer reachability over BGP
+  hosts: localhost
+  gather_facts: false
+  vars:
+    _pool: "{{ rke2_ippool_private }}"
+  tasks:
+    - name: Query load balancer services
+      kubernetes.core.k8s_info:
+        kubeconfig: "{{ molecule_local_kubeconfig }}"
+        kind: Service
+      register: _lb_query
+      retries: 15
+      delay: 20
+      vars:
+        _lbs: "{{ _lb_query.resources | selectattr('spec.type', 'equalto', 'LoadBalancer') | list }}"
+      until:
+        - _lbs | length > 0
+        - _lbs | rejectattr('status.loadBalancer.ingress', 'defined') | list | length == 0
+
+    - name: Verify load balancer addresses belong to the BGP pool
+      ansible.builtin.assert:
+        that: item.status.loadBalancer.ingress[0].ip | ansible.utils.ipaddr(_pool)
+        fail_msg: "{{ item.metadata.namespace }}/{{ item.metadata.name }} has no address in {{ _pool }}"
+      loop: "{{ _lb_query.resources | selectattr('spec.type', 'equalto', 'LoadBalancer') | list }}"
+      loop_control:
+        label: "{{ item.metadata.namespace }}/{{ item.metadata.name }}"
+
+    - name: Verify load balancer addresses are reachable from localhost
+      ansible.builtin.wait_for:
+        host: "{{ item.status.loadBalancer.ingress[0].ip }}"
+        port: "{{ item.spec.ports | map(attribute='port') | first }}"
+        timeout: 60
+      loop: "{{ _lb_query.resources | selectattr('spec.type', 'equalto', 'LoadBalancer') | list }}"
+      loop_control:
+        label: "{{ item.metadata.namespace }}/{{ item.metadata.name }}"
+
 - name: Install and configure beat packages
   hosts: all:!localhost
   become: true

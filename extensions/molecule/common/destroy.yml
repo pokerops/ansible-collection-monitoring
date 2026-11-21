@@ -11,5 +11,10 @@
       vars:
         _api_hostname: "{{ rke2_api_url | urlsplit('hostname') }}"
 
+- name: Destroy FRR router on KVM host
+  import_playbook: pokerops.rke2.frr
+  vars:
+    rke2_frr_state: absent
+
 - name: Import libvirt destroy playbook
   import_playbook: nephelaiio.libvirt.destroy

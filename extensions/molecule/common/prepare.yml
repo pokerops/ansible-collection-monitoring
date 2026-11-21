@@ -36,6 +36,9 @@
         _api_hostname: "{{ rke2_api_url | urlsplit('hostname') }}"
         _api_address: "{{ rke2_kubevip_address | default(ansible_facts.default_ipv4.address) }}"
 
+- name: Configure FRR router on KVM host
+  import_playbook: pokerops.rke2.frr
+
 - name: Deploy rke2 cluster
   import_playbook: pokerops.rke2.install
 
