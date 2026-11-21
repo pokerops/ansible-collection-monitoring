@@ -7,4 +7,3 @@
 
 - name: Deploy beats agents
   import_playbook: pokerops.monitoring.beats.install
-  when: monitoring_mode_legacy | default(True) | bool
