@@ -1,0 +1,16 @@
+---
+sources:
+  alloy_remote_write:
+    type: "prometheus_remote_write"
+    address: "127.0.0.1:{{ vector_alloy_port }}"
+
+sinks:
+{% if vector_output_file_enable %}
+  alloy_file:
+    type: "file"
+    inputs: ["alloy_remote_write"]
+    path: "/var/log/vector/alloy.log"
+    encoding:
+      codec: "json"
+      timestamp_format: "rfc3339"
+{%- endif %}

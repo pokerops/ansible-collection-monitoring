@@ -53,6 +53,8 @@ provisioner:
           ansible_ssh_extra_args: "-o ControlPersist=no -o ControlPath=none"
           libvirt_user: molecule
           libvirt_address: "172.31.252.1/24"
+          # The rke2 platform images alone take over 13G, the default guest disk leaves no headroom
+          libvirt_guest_size: "40G"
           libvirt_platforms: "{{ molecule_yml.platforms }}"
           # Control plane VIP, carved out of the block between the guests (consecutive from .2) and the end of the network
           molecule_pool_api: "{{ libvirt_address | ansible.utils.ipsubnet((libvirt_address | ansible.utils.ipaddr('prefix') | int) + 2, 1) }}"
@@ -82,7 +84,7 @@ provisioner:
           rabbitmq_port: 30672
           rabbitmq_api_port: 31672
           # Monitoring params
-          monitoring_mode_legacy: true
+          monitoring_agent: "${MONITORING_AGENT:-beats}"
           monitoring_vector_output_file_enable: true
           monitoring_agent_location: "local"
           monitoring_agent_environment: "molecule"

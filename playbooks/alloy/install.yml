@@ -1,0 +1,82 @@
+---
+- name: Verify monitoring configuration
+  import_playbook: pokerops.monitoring.check
+
+- name: Uninstall beats from hosts using alloy
+  import_playbook: pokerops.monitoring.beats.uninstall
+  vars:
+    monitoring_clients: monitoring_agent_alloy
+
+- name: Install and configure Alloy agent
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}:!{{ monitoring_exclude | default('monitoring_exclude') }}"
+  become: true
+  roles:
+    - pokerops.monitoring.monitoring
+  tasks:
+    - name: Skip hosts not using alloy
+      ansible.builtin.meta: end_host
+      when: monitoring_agent != 'alloy'
+
+    - name: Verify Alloy install params
+      block:
+        - name: Verify agent location parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_location != ""
+            fail_msg: "monitoring_agent_location parameter is required"
+
+        - name: Verify agent environment parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_environment != ""
+            fail_msg: "monitoring_agent_environment parameter is required"
+
+        - name: Verify agent function parameter
+          ansible.builtin.assert:
+            that: monitoring_agent_function != ""
+            fail_msg: "monitoring_agent_function parameter is required"
+
+    - name: Install Alloy agent
+      when: ansible_facts.os_family == "Debian"
+      block:
+        - name: Gather package facts
+          ansible.builtin.package_facts:
+
+        - name: Install Alloy package
+          ansible.builtin.apt:
+            deb: "{{ _alloy_release }}/alloy-{{ monitoring_alloy_version }}-1.{{ _alloy_arch }}.deb"
+          vars:
+            _alloy_release: "https://github.com/grafana/alloy/releases/download/v{{ monitoring_alloy_version }}"
+            _alloy_arch: "{{ {'x86_64': 'amd64', 'aarch64': 'arm64'}[ansible_facts.architecture] }}"
+          # The package is large, so only download it when the pinned version is missing
+          when: >-
+            'alloy' not in ansible_facts.packages
+            or monitoring_alloy_version ~ '-1' not in ansible_facts.packages['alloy'] | map(attribute='version') | list
+
+    - name: Deploy Alloy configuration
+      ansible.builtin.template:
+        src: config.alloy.j2
+        dest: "{{ monitoring_alloy_conf_path }}"
+        owner: root
+        group: alloy
+        mode: "0640"
+      vars:
+        alloy_remote_write_port: "{{ monitoring_vector_alloy_port }}"
+        alloy_scrape_interval: "{{ monitoring_alloy_scrape_interval }}"
+        alloy_process_enable: "{{ monitoring_alloy_process_enable }}"
+        alloy_location: "{{ monitoring_agent_location }}"
+        alloy_environment: "{{ monitoring_agent_environment }}"
+        alloy_function: "{{ monitoring_agent_function }}"
+      notify: alloy_restart
+
+    - name: Start Alloy service
+      ansible.builtin.systemd:
+        name: alloy
+        state: started
+        enabled: true
+        daemon_reload: true
+
+  handlers:
+    - name: Alloy restart
+      ansible.builtin.service:
+        name: alloy
+        state: restarted
+      listen: alloy_restart

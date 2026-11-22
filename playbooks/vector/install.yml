@@ -101,6 +101,36 @@
         - "{{ monitoring_vector_conf_path }}/examples"
       notify: vector_reload
 
+    - name: Destroy Vector alloy configuration
+      ansible.builtin.file:
+        path: "{{ monitoring_vector_conf_path }}/alloy.yaml"
+        state: absent
+      when: monitoring_agent != 'alloy'
+      notify: vector_reload
+
+    - name: Deploy Vector alloy configuration
+      ansible.builtin.template:
+        src: alloy.yaml.j2
+        dest: "{{ monitoring_vector_conf_path }}/alloy.yaml"
+        owner: vector
+        group: vector
+        mode: "0640"
+      vars:
+        vector_output_file_enable: "{{ monitoring_vector_output_file_enable }}"
+        vector_alloy_port: "{{ monitoring_vector_alloy_port }}"
+      when: monitoring_agent == 'alloy'
+      notify: vector_reload
+
+    - name: Destroy Vector beat monitor configuration
+      ansible.builtin.file:
+        path: "{{ monitoring_vector_conf_path }}/{{ item.name }}.yaml"
+        state: absent
+      loop_control:
+        label: "{{ item.name }}"
+      loop: "{{ monitoring_beat_configs }}"
+      when: monitoring_agent != 'beats'
+      notify: vector_reload
+
     - name: Deploy Vector beat monitor configuration
       ansible.builtin.template:
         src: "{{ beat_name }}.yaml.j2"
@@ -119,6 +149,7 @@
       loop_control:
         label: "{{ beat_name }}"
       loop: "{{ monitoring_beat_configs }}"
+      when: monitoring_agent == 'beats'
       notify: vector_reload
 
     - name: Deploy Vector ntp monitor configuration

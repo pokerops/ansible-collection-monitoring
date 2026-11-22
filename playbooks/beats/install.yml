@@ -1,6 +1,11 @@
 ---
-- name: Load collection defaults
+- name: Verify monitoring configuration
   import_playbook: pokerops.monitoring.check
+
+- name: Uninstall Alloy from hosts using beats
+  import_playbook: pokerops.monitoring.alloy.uninstall
+  vars:
+    monitoring_clients: monitoring_agent_beats
 
 - name: Install and configure beat packages
   hosts: "{{ monitoring_clients | default('monitoring_clients') }}:!{{ monitoring_exclude | default('monitoring_exclude') }}"
@@ -8,6 +13,10 @@
   roles:
     - pokerops.monitoring.monitoring
   tasks:
+    - name: Skip hosts not using beats
+      ansible.builtin.meta: end_host
+      when: monitoring_agent != 'beats'
+
     - name: Verify beat install params
       block:
         - name: Verify agent location parameter

@@ -1,0 +1,35 @@
+// Managed by ansible
+prometheus.exporter.unix "host" {
+}
+{% if alloy_process_enable %}
+
+prometheus.exporter.process "host" {
+  matcher {
+    name    = "{% raw %}{{.Comm}}{% endraw %}"
+    cmdline = [".+"]
+  }
+}
+{% endif %}
+
+prometheus.scrape "host" {
+{% if alloy_process_enable %}
+  targets         = array.concat(prometheus.exporter.unix.host.targets, prometheus.exporter.process.host.targets)
+{% else %}
+  targets         = prometheus.exporter.unix.host.targets
+{% endif %}
+  forward_to      = [prometheus.remote_write.vector.receiver]
+  scrape_interval = "{{ alloy_scrape_interval }}"
+}
+
+// The local Vector is the only component that writes to the remote endpoint
+prometheus.remote_write "vector" {
+  endpoint {
+    url = "http://127.0.0.1:{{ alloy_remote_write_port }}"
+  }
+
+  external_labels = {
+    location    = "{{ alloy_location }}",
+    environment = "{{ alloy_environment }}",
+    function    = "{{ alloy_function }}",
+  }
+}

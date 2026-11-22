@@ -12,6 +12,19 @@
       vars:
         supported_distributions: ["Debian"]
 
+    - name: Verify monitoring agent
+      ansible.builtin.assert:
+        that: monitoring_agent in supported_agents
+        fail_msg: "Unsupported monitoring agent {{ monitoring_agent }}. Supported agents are: {{ supported_agents }}"
+      vars:
+        supported_agents: ["alloy", "beats"]
+
+    # Dynamic groups (monitoring_agent_alloy, monitoring_agent_beats) let the install
+    # playbooks uninstall the other agent from the hosts that switched away from it
+    - name: Group hosts by monitoring agent
+      ansible.builtin.group_by:
+        key: "monitoring_agent_{{ monitoring_agent }}"
+
     - name: Gather service facts
       ansible.builtin.service_facts:
 

@@ -1,5 +1,10 @@
 ---
-monitoring_vector_version: "0.55.0"
+# renovate: datasource=github-releases depName=vectordotdev/vector extractVersion=^v(?<version>.+)$
+monitoring_vector_version: "0.62.0"
+
+# Host monitoring agent, one of alloy or beats (metricbeat, filebeat, heartbeat).
+# Set per host or group, so an environment can migrate one host at a time.
+monitoring_agent: alloy
 
 monitoring_script_venv: /opt/pokerops
 monitoring_script_repo_url: "https://github.com/pokerops/ansible-collection-monitoring.git"
@@ -20,6 +25,13 @@ monitoring_vector_output_file_size: 52428800
 monitoring_vector_output_file_count: 7
 monitoring_vector_ntp_peer: time.cloudflare.com
 monitoring_vector_ntp_interval: "60"
+monitoring_vector_alloy_port: 9205
+
+# renovate: datasource=github-releases depName=grafana/alloy extractVersion=^v(?<version>.+)$
+monitoring_alloy_version: "1.22.0"
+monitoring_alloy_conf_path: /etc/alloy/config.alloy
+monitoring_alloy_scrape_interval: 15s
+monitoring_alloy_process_enable: true
 
 monitoring_legacy_enable: false
 monitoring_beat_configs:

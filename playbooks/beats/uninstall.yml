@@ -3,6 +3,25 @@
   hosts: "{{ monitoring_clients | default('monitoring_clients') }}:!{{ monitoring_exclude | default('monitoring_exclude') }}"
   become: true
   tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    # Purging a package removes its unit file but leaves a running process behind
+    - name: Stop beats services
+      ansible.builtin.systemd:
+        name: "{{ item }}.service"
+        state: stopped
+        enabled: false
+        daemon_reload: true
+      loop:
+        - filebeat
+        - metricbeat
+        - heartbeat-elastic
+        - packetbeat
+      when:
+        - item ~ '.service' in ansible_facts.services
+        - ansible_facts.services[item ~ '.service'].status != 'not-found'
+
     - name: Purge beats packages
       ansible.builtin.apt:
         name:
@@ -10,6 +29,7 @@
           - metricbeat
           - packetbeat
           - heartbeat
+          - heartbeat-elastic
         state: absent
         purge: true
 

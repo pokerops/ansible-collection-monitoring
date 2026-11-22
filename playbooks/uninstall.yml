@@ -2,5 +2,8 @@
 - name: Uninstall Vector agent
   import_playbook: pokerops.monitoring.vector.uninstall
 
+- name: Uninstall Alloy agent
+  import_playbook: pokerops.monitoring.alloy.uninstall
+
 - name: Uninstall beats agents
   import_playbook: pokerops.monitoring.beats.uninstall

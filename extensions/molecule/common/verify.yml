@@ -41,129 +41,199 @@
   roles:
     - pokerops.monitoring.monitoring
   tasks:
-    - name: Gather service facts
-      ansible.builtin.service_facts:
+    - name: Verify beats agents
+      when: monitoring_agent == 'beats'
+      block:
+        - name: Gather service facts
+          ansible.builtin.service_facts:
 
-    - name: Verify beats daemons
-      ansible.builtin.assert:
-        that:
-          - service_installed
-          - service_running
-          - service_enabled
-        fail_msg: "{{ fail_uninstalled if not service_installed else (fail_offline if not service_running else fail_disabled) }}"
-      vars:
-        fail_uninstalled: "{{ item }} service is not installed"
-        fail_offline: "{{ item }} service is not running"
-        fail_disabled: "{{ item }} service is not enabled"
-        service_installed: "{{ item + '.service' in ansible_facts.services }}"
-        service_running: "{{ ansible_facts.services[item + '.service'].state == 'running' }}"
-        service_enabled: "{{ ansible_facts.services[item + '.service'].status == 'enabled' }}"
-      loop:
-        - filebeat
-        - metricbeat
-        - heartbeat-elastic
+        - name: Verify beats daemons
+          ansible.builtin.assert:
+            that:
+              - service_installed
+              - service_running
+              - service_enabled
+            fail_msg: "{{ fail_uninstalled if not service_installed else (fail_offline if not service_running else fail_disabled) }}"
+          vars:
+            fail_uninstalled: "{{ item }} service is not installed"
+            fail_offline: "{{ item }} service is not running"
+            fail_disabled: "{{ item }} service is not enabled"
+            service_installed: "{{ item + '.service' in ansible_facts.services }}"
+            service_running: "{{ ansible_facts.services[item + '.service'].state == 'running' }}"
+            service_enabled: "{{ ansible_facts.services[item + '.service'].status == 'enabled' }}"
+          loop:
+            - filebeat
+            - metricbeat
+            - heartbeat-elastic
 
-    - name: Create log paths
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-      loop:
-        - "/var/log/mongodb"
-        - "/var/log/mysqlrouter"
+        - name: Create log paths
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: directory
+          loop:
+            - "/var/log/mongodb"
+            - "/var/log/mysqlrouter"
 
-    - name: Create log samples
-      ansible.builtin.template:
-        src: "{{ item.name }}.j2.log"
-        dest: "{{ item.path }}"
-        owner: root
-        group: syslog
-      vars:
-        _ansible_date: "{{ ansible_date_time }}"
-      loop_control:
-        label: "{{ item.path }}"
-      loop:
-        - name: mongod
-          path: /var/log/mongodb/mongod.log
-          date: "{{ _ansible_date.iso8601 }}"
-        - name: mysqlrouter
-          path: /var/log/mysqlrouter/mysqlrouter.log
-          date: "{{ _ansible_date.date }} {{ _ansible_date.time }}"
+        - name: Create log samples
+          ansible.builtin.template:
+            src: "{{ item.name }}.j2.log"
+            dest: "{{ item.path }}"
+            owner: root
+            group: syslog
+          vars:
+            _ansible_date: "{{ ansible_date_time }}"
+          loop_control:
+            label: "{{ item.path }}"
+          loop:
+            - name: mongod
+              path: /var/log/mongodb/mongod.log
+              date: "{{ _ansible_date.iso8601 }}"
+            - name: mysqlrouter
+              path: /var/log/mysqlrouter/mysqlrouter.log
+              date: "{{ _ansible_date.date }} {{ _ansible_date.time }}"
 
-    - name: Pause for 15 seconds to allow beats to send data
-      ansible.builtin.pause:
-        seconds: 15
+        - name: Pause for 15 seconds to allow beats to send data
+          ansible.builtin.pause:
+            seconds: 15
 
-    - name: Slurp filebeat events
-      ansible.builtin.slurp:
-        src: /var/log/vector/filebeat.log
-      register: filebeat_process_log
+        - name: Slurp filebeat events
+          ansible.builtin.slurp:
+            src: /var/log/vector/filebeat.log
+          register: filebeat_process_log
 
-    - name: Decode filebeat events
-      ansible.builtin.set_fact:
-        filebeat_events: "{{ _event_lines | map('from_json') }}"
-      vars:
-        _event_lines: "{{ filebeat_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
+        - name: Decode filebeat events
+          ansible.builtin.set_fact:
+            filebeat_events: "{{ _event_lines | map('from_json') }}"
+          vars:
+            _event_lines: "{{ filebeat_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
 
-    - name: Verify filebeat mysqlrouter log ingest
-      ansible.builtin.assert:
-        that:
-          - _mysqlrouter | rejectattr('mysqlrouter.type', 'defined') | length == 0
-          - _mysqlrouter | rejectattr('mysqlrouter.level', 'defined') | length == 0
-          - _mysqlrouter | rejectattr('mysqlrouter.thread_id', 'defined') | length == 0
-          - (_types | length) == (_mysqlrouter | length )
-          - (_levels | length) == (_mysqlrouter | length )
-          - (_thread_ids | length) == (_mysqlrouter | length )
-      vars:
-        _mysqlrouter_path: "/var/log/mysqlrouter/mysqlrouter.log"
-        _mysqlrouter: "{{ filebeat_events | selectattr('log.file.path', 'equalto', _mysqlrouter_path) | list }}"
-        _types: "{{ _mysqlrouter | map(attribute='mysqlrouter.type') }}"
-        _levels: "{{ _mysqlrouter | map(attribute='mysqlrouter.level') }}"
-        _thread_ids: "{{ _mysqlrouter | map(attribute='mysqlrouter.thread_id') }}"
+        - name: Verify filebeat mysqlrouter log ingest
+          ansible.builtin.assert:
+            that:
+              - _mysqlrouter | rejectattr('mysqlrouter.type', 'defined') | length == 0
+              - _mysqlrouter | rejectattr('mysqlrouter.level', 'defined') | length == 0
+              - _mysqlrouter | rejectattr('mysqlrouter.thread_id', 'defined') | length == 0
+              - (_types | length) == (_mysqlrouter | length )
+              - (_levels | length) == (_mysqlrouter | length )
+              - (_thread_ids | length) == (_mysqlrouter | length )
+          vars:
+            _mysqlrouter_path: "/var/log/mysqlrouter/mysqlrouter.log"
+            _mysqlrouter: "{{ filebeat_events | selectattr('log.file.path', 'equalto', _mysqlrouter_path) | list }}"
+            _types: "{{ _mysqlrouter | map(attribute='mysqlrouter.type') }}"
+            _levels: "{{ _mysqlrouter | map(attribute='mysqlrouter.level') }}"
+            _thread_ids: "{{ _mysqlrouter | map(attribute='mysqlrouter.thread_id') }}"
 
-    - name: Verify filebeat mongodb log ingest
-      ansible.builtin.assert:
-        that:
-          - _mongodb | rejectattr('mongodb.severity', 'defined') | length == 0
-          - _mongodb | rejectattr('mongodb.log_id', 'defined') | length == 0
-          - _mongodb | rejectattr('mongodb.context', 'defined') | length == 0
-          - _mongodb | rejectattr('mongodb.message', 'defined') | length == 0
-          - _mongodb | rejectattr('mongodb.component', 'defined') | length == 0
-          - (_severities | length) == (_mongodb | length)
-          - (_log_ids | length) == (_mongodb | length)
-          - (_contexts | length) == (_mongodb | length)
-          - (_messages | length) == (_mongodb | length)
-          - (_components | length) == (_mongodb | length)
-      vars:
-        _mongodb_path: "/var/log/mongodb/mongod.log"
-        _mongodb: "{{ filebeat_events | selectattr('log.file.path', 'equalto', _mongodb_path) | list }}"
-        _severities: "{{ _mongodb | map(attribute='mongodb.severity') }}"
-        _log_ids: "{{ _mongodb | map(attribute='mongodb.log_id') }}"
-        _contexts: "{{ _mongodb | map(attribute='mongodb.context') }}"
-        _messages: "{{ _mongodb | map(attribute='mongodb.message') }}"
-        _components: "{{ _mongodb | map(attribute='mongodb.component') }}"
+        - name: Verify filebeat mongodb log ingest
+          ansible.builtin.assert:
+            that:
+              - _mongodb | rejectattr('mongodb.severity', 'defined') | length == 0
+              - _mongodb | rejectattr('mongodb.log_id', 'defined') | length == 0
+              - _mongodb | rejectattr('mongodb.context', 'defined') | length == 0
+              - _mongodb | rejectattr('mongodb.message', 'defined') | length == 0
+              - _mongodb | rejectattr('mongodb.component', 'defined') | length == 0
+              - (_severities | length) == (_mongodb | length)
+              - (_log_ids | length) == (_mongodb | length)
+              - (_contexts | length) == (_mongodb | length)
+              - (_messages | length) == (_mongodb | length)
+              - (_components | length) == (_mongodb | length)
+          vars:
+            _mongodb_path: "/var/log/mongodb/mongod.log"
+            _mongodb: "{{ filebeat_events | selectattr('log.file.path', 'equalto', _mongodb_path) | list }}"
+            _severities: "{{ _mongodb | map(attribute='mongodb.severity') }}"
+            _log_ids: "{{ _mongodb | map(attribute='mongodb.log_id') }}"
+            _contexts: "{{ _mongodb | map(attribute='mongodb.context') }}"
+            _messages: "{{ _mongodb | map(attribute='mongodb.message') }}"
+            _components: "{{ _mongodb | map(attribute='mongodb.component') }}"
 
-    - name: Slurp metricbeat events
-      ansible.builtin.slurp:
-        src: /var/log/vector/metricbeat.log
-      register: metricbeat_process_log
+        - name: Slurp metricbeat events
+          ansible.builtin.slurp:
+            src: /var/log/vector/metricbeat.log
+          register: metricbeat_process_log
 
-    - name: Decode metricbeat events
-      ansible.builtin.set_fact:
-        metricbeat_events: "{{ _event_lines | map('from_json') }}"
-      vars:
-        _event_lines: "{{ metricbeat_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
+        - name: Decode metricbeat events
+          ansible.builtin.set_fact:
+            metricbeat_events: "{{ _event_lines | map('from_json') }}"
+          vars:
+            _event_lines: "{{ metricbeat_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
 
-    - name: Decode process events
-      ansible.builtin.set_fact:
-        metricbeat_processes_systemd: "{{ metricbeat_processes_all | selectattr('process.executable', 'search', 'systemd$') | list }}"
-      vars:
-        metricbeat_processes_all: "{{ metricbeat_events | selectattr('metricset.name', 'equalto', 'process') | list }}"
+        - name: Decode process events
+          ansible.builtin.set_fact:
+            metricbeat_processes_systemd: "{{ metricbeat_processes_all | selectattr('process.executable', 'search', 'systemd$') | list }}"
+          vars:
+            metricbeat_processes_all: "{{ metricbeat_events | selectattr('metricset.name', 'equalto', 'process') | list }}"
 
-    - name: Verify metricbeat process monitoring
-      ansible.builtin.assert:
-        that: metricbeat_processes_systemd | length > 0
-        success_msg: "{{ metricbeat_processes_systemd | length }} events found for systemd processes"
-        fail_msg: "{{ metricbeat_processes_systemd | length }} events found for systemd processes"
+        - name: Verify metricbeat process monitoring
+          ansible.builtin.assert:
+            that: metricbeat_processes_systemd | length > 0
+            success_msg: "{{ metricbeat_processes_systemd | length }} events found for systemd processes"
+            fail_msg: "{{ metricbeat_processes_systemd | length }} events found for systemd processes"
+
+    - name: Verify alloy agent
+      when: monitoring_agent == 'alloy'
+      block:
+        - name: Gather service facts
+          ansible.builtin.service_facts:
+
+        - name: Verify alloy daemon
+          ansible.builtin.assert:
+            that:
+              - "'alloy.service' in ansible_facts.services"
+              - ansible_facts.services['alloy.service'].state == 'running'
+              - ansible_facts.services['alloy.service'].status == 'enabled'
+            fail_msg: "alloy service is not installed, running and enabled"
+
+        - name: Verify beats are not installed
+          ansible.builtin.assert:
+            that: "item + '.service' not in ansible_facts.services"
+            fail_msg: "{{ item }} service is installed on a host using alloy"
+          loop:
+            - filebeat
+            - metricbeat
+            - heartbeat-elastic
+
+        # The file sink is never rotated within a test run, so drop events from earlier
+        # runs and read only what is collected from here on. Truncating in place keeps
+        # the file Vector has open valid, which replacing the file would not
+        - name: Truncate alloy events
+          ansible.builtin.command: truncate -s 0 /var/log/vector/alloy.log
+          changed_when: true
+
+        - name: Pause for 30 seconds to allow alloy to send data
+          ansible.builtin.pause:
+            seconds: 30
+
+        - name: Slurp alloy events
+          ansible.builtin.slurp:
+            src: /var/log/vector/alloy.log
+          register: alloy_process_log
+
+        - name: Decode alloy events
+          ansible.builtin.set_fact:
+            alloy_events: "{{ _event_lines | map('from_json') }}"
+          vars:
+            _event_lines: "{{ alloy_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
+
+        - name: Verify alloy host metrics
+          ansible.builtin.assert:
+            that:
+              - _names | select('match', '^node_cpu_seconds_total$') | length > 0
+              - _names | select('match', '^node_memory_MemAvailable_bytes$') | length > 0
+              - _names | select('match', '^node_filesystem_avail_bytes$') | length > 0
+              - _names | select('match', '^namedprocess_namegroup_num_procs$') | length > 0
+            fail_msg: "alloy host metrics missing from {{ alloy_events | length }} events"
+          vars:
+            _names: "{{ alloy_events | map(attribute='name') | unique }}"
+
+        - name: Verify alloy external labels
+          ansible.builtin.assert:
+            that:
+              - _tags.location == monitoring_agent_location
+              - _tags.environment == monitoring_agent_environment
+              - _tags.function == monitoring_agent_function
+            fail_msg: "alloy events are missing the agent location, environment or function labels"
+          vars:
+            _cpu: "{{ alloy_events | selectattr('name', 'equalto', 'node_cpu_seconds_total') | first }}"
+            _tags: "{{ _cpu.tags }}"
 
     - name: Slurp filesystem events
       ansible.builtin.slurp:

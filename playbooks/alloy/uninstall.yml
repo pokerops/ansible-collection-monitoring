@@ -1,0 +1,30 @@
+---
+- name: Uninstall Alloy agent
+  hosts: "{{ monitoring_clients | default('monitoring_clients') }}:!{{ monitoring_exclude | default('monitoring_exclude') }}"
+  become: true
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    # Purging a package removes its unit file but leaves a running process behind
+    - name: Stop Alloy service
+      ansible.builtin.systemd:
+        name: alloy.service
+        state: stopped
+        enabled: false
+        daemon_reload: true
+      when:
+        - "'alloy.service' in ansible_facts.services"
+        - ansible_facts.services['alloy.service'].status != 'not-found'
+
+    - name: Purge Alloy package
+      ansible.builtin.apt:
+        name: alloy
+        state: absent
+        purge: true
+
+    # Drops the failed unit state a stopped Alloy leaves behind, which would
+    # otherwise make a later Alloy install fail to load its unit
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
