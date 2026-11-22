@@ -84,7 +84,7 @@ provisioner:
           rabbitmq_port: 30672
           rabbitmq_api_port: 31672
           # Monitoring params
-          monitoring_agent: "${MONITORING_AGENT:-beats}"
+          monitoring_agent: "${MONITORING_AGENT:-alloy}"
           monitoring_vector_output_file_enable: true
           monitoring_agent_location: "local"
           monitoring_agent_environment: "molecule"

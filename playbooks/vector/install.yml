@@ -46,7 +46,7 @@
       block:
         - name: Install Vector agent
           ansible.builtin.apt:
-            deb: https://packages.timber.io/vector/{{ monitoring_vector_version }}/vector_{{ monitoring_vector_version }}-1_amd64.deb
+            deb: https://github.com/vectordotdev/vector/releases/download/v{{ monitoring_vector_version }}/vector_{{ monitoring_vector_version }}-1_amd64.deb
 
         - name: Update apt cache
           ansible.builtin.apt:
