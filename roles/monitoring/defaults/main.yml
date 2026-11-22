@@ -9,6 +9,7 @@ monitoring_agent: alloy
 monitoring_script_venv: /opt/pokerops
 monitoring_script_repo_url: "https://github.com/pokerops/ansible-collection-monitoring.git"
 monitoring_script_repo_version: "0.2.5"
+monitoring_script_package: "" #  optional path for local wheel build, doverrides monitoring_script_repo_url when set
 monitoring_script_path: /usr/local/bin/monitor
 
 monitoring_agent_location: ""

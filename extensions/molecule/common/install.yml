@@ -1,4 +1,40 @@
 ---
+# Build CLI package from the working tree
+- name: Build monitoring script package
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Drop previous package builds
+      ansible.builtin.file:
+        path: "{{ _package_dir }}"
+        state: absent
+
+    - name: Build package
+      ansible.builtin.command:
+        cmd: uv --python-preference=only-managed build --wheel --out-dir {{ _package_dir }}
+        chdir: "{{ _project_dir }}"
+      changed_when: true
+
+    - name: Query packages
+      ansible.builtin.find:
+        paths: "{{ _package_dir }}"
+        patterns: "*.whl"
+      register: _package
+
+    - name: Check package uniqueness
+      ansible.builtin.assert:
+        that: _package.files | length == 1
+
+    - name: Set package facts
+      ansible.builtin.set_fact:
+        monitoring_script_package: "{{ _package.files[0].path }}"
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      loop: "{{ groups['all'] }}"
+  vars:
+    _project_dir: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+    _package_dir: "{{ _project_dir }}/dist/molecule"
+
 - name: Drop tools virtualenv
   hosts: all
   become: true

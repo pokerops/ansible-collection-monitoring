@@ -46,7 +46,6 @@
           vars:
             _alloy_release: "https://github.com/grafana/alloy/releases/download/v{{ monitoring_alloy_version }}"
             _alloy_arch: "{{ {'x86_64': 'amd64', 'aarch64': 'arm64'}[ansible_facts.architecture] }}"
-          # The package is large, so only download it when the pinned version is missing
           when: >-
             'alloy' not in ansible_facts.packages
             or monitoring_alloy_version ~ '-1' not in ansible_facts.packages['alloy'] | map(attribute='version') | list

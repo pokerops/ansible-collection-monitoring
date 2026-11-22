@@ -13,15 +13,25 @@
 
     - name: Install virtualenv packages
       ansible.builtin.package:
-        name:
-          - virtualenv
-          - git
+        name: "{{ ['virtualenv'] + ([] if monitoring_script_package | length > 0 else ['git']) }}"
+
+    # Copy local wheel build
+    - name: Copy monitoring script package
+      ansible.builtin.copy:
+        src: "{{ monitoring_script_package }}"
+        dest: "/tmp/{{ monitoring_script_package | basename }}"
+        mode: "u=rw,og=r"
+      when: monitoring_script_package | length > 0
 
     - name: Initialize virtualenv
       ansible.builtin.pip:
         name:
-          - "git+{{ monitoring_script_repo_url }}@{{ monitoring_script_repo_version }}"
+          - "{{ _monitoring_script_source }}"
         virtualenv: "{{ monitoring_script_venv }}"
+      vars:
+        _monitoring_script_git: "git+{{ monitoring_script_repo_url }}@{{ monitoring_script_repo_version }}"
+        _monitoring_script_wheel: "/tmp/{{ monitoring_script_package | basename }}"
+        _monitoring_script_source: "{{ _monitoring_script_wheel if monitoring_script_package | length > 0 else _monitoring_script_git }}"
 
     - name: Create monitoring script
       ansible.builtin.copy:
