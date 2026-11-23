@@ -11,9 +11,12 @@ sources:
       "{{ vector_monitor_script_path }}",
       "ntp",
       "drift",
-      "--location {{ vector_ntp_location }}",
-      "--environment {{ vector_ntp_environment}}",
-      "--function {{ vector_ntp_function }}"
+      "--location",
+      "{{ vector_ntp_location }}",
+      "--environment",
+      "{{ vector_ntp_environment}}",
+      "--function",
+      "{{ vector_ntp_function }}"
     ]
 
 transforms:

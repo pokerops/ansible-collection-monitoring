@@ -12,21 +12,28 @@ sources:
       "{{ vector_monitor_script_path }}",
       "filesystem",
       "files",
-      "--location {{ vector_filesystem_location }}",
-      "--environment {{ vector_filesystem_environment}}",
-      "--function {{ vector_filesystem_function }}",
-      "--ctime {{ fs.ctime | default(-1) }}",
+      "--location",
+      "{{ vector_filesystem_location }}",
+      "--environment",
+      "{{ vector_filesystem_environment}}",
+      "--function",
+      "{{ vector_filesystem_function }}",
+      "--ctime",
+      "{{ fs.ctime | default(-1) }}",
       {% if 'mtime' in fs %}
-      "--mtime {{ fs.mtime }}",
+      "--mtime",
+      "{{ fs.mtime }}",
       {% endif %}
       {% if 'size' in fs %}
-      "--size {{ fs.size }}",
+      "--size",
+      "{{ fs.size }}",
       {% endif %}
       {% if 'recursive' in fs and fs.recursive %}
       "--recursive",
       {% endif %}
       {% if 'name' in fs %}
-      "--name {{ fs.name }}",
+      "--name",
+      "{{ fs.name }}",
       {% endif %}
       "{{ fs.path }}"
     ]
