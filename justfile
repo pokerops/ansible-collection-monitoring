@@ -7,18 +7,7 @@ MOLECULE_SCENARIO := "legacy"
 MOLECULE_LOCAL_KUBECONFIG := `pwd` + "/.kubeconfig"
 MOLECULE_KVM_IMAGE := 'https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img'
 
-GIT_REPO := `git config --get remote.origin.url | sed -E 's#https://github.com/##; s#^git@github.com:##; s#\.git$$##'`
-GIT_BRANCH := `git rev-parse --abbrev-ref HEAD`
-
 RENOVATE_IMAGE := 'ghcr.io/renovatebot/renovate:44.257.9'
-
-configure:
-	@sed -i -e \
-		"s#\(monitoring_script_repo_url:\).*#\1 \"https://github.com/${GIT_REPO}.git\"#" \
-		roles/monitoring/defaults/main.yml
-	@sed -i -e \
-		"s#\(monitoring_script_repo_version:\).*#\1 \"${GIT_BRANCH}\"#" \
-		roles/monitoring/defaults/main.yml
 
 kubectl:
 	@echo "Using kubeconfig: ${MOLECULE_LOCAL_KUBECONFIG}"
@@ -114,7 +103,7 @@ check-vector:
     -v "${RENDERED}:/rendered:ro" -v "${PWD}/tests/vector:/tests:ro" \
     "timberio/vector:${VERSION}-debian" test "/rendered/*.yaml" "/tests/*.test.yaml"
 
-# Check that the script repository defaults are the release values, configure rewrites them to a fork and branch for CI runs
+# Check that the script repository defaults are the canonical repository and a release version
 check-defaults:
   #!/usr/bin/env bash
   DEFAULTS=roles/monitoring/defaults/main.yml

@@ -16,6 +16,7 @@ jobs:
           - check-types
           - check-build
           - check-nox
+          - check-vector
     steps:
       - name: Run python ${{ matrix.target }}
         uses: pokerops/ansible-utils@master

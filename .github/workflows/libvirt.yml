@@ -28,18 +28,6 @@ jobs:
       - name: Check out the codebase
         uses: actions/checkout@v5
 
-      - name: Run just configure
-        uses: pokerops/ansible-utils@master
-        with:
-          run: >
-            just
-            --set GIT_REPO ${{ github.event.pull_request.head.repo.full_name }}
-            --set GIT_BRANCH ${{ github.head_ref || github.ref_name }}
-            configure
-
-      - name: Debug configuration changes
-        run: git diff
-
       - name: Run devbox tests
         uses: pokerops/ansible-utils@master
         with:
