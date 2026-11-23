@@ -74,6 +74,7 @@
           ansible.builtin.file:
             path: "{{ item }}"
             state: directory
+            mode: "0755"
           loop:
             - "/var/log/mongodb"
             - "/var/log/mysqlrouter"
@@ -84,6 +85,7 @@
             dest: "{{ item.path }}"
             owner: root
             group: syslog
+            mode: "0640"
           vars:
             _ansible_date: "{{ ansible_date_time }}"
           loop_control:

@@ -27,9 +27,10 @@ kubectl:
 run *args:
   @uv --python-preference=only-managed run python -m pokerops.monitoring {{args}}
 
-# Lint code with ruff
+# Lint python with ruff, then yaml and ansible with the imported lint recipe, which the local recipe shadows
 lint *args:
   @uv --python-preference=only-managed run ruff check {{args}} python/src python/tests bin
+  @{{just_executable()}} --justfile "{{source_directory()}}/.devbox/virtenv/pokerops.ansible-utils.molecule/justfile" --working-directory "{{justfile_directory()}}" lint
 
 alias update := renovate
 
@@ -71,7 +72,12 @@ check *targets:
   fi
   exec {{just_executable()}} --justfile "{{justfile()}}" "${TARGETS[@]/#/check-}"
 
-check-format *args:
+# Check python formatting, run 'just format' to apply it
+check-format:
+  @uv --python-preference=only-managed run ruff format --check python/src python/tests bin
+
+# Apply python formatting
+format *args:
   @uv --python-preference=only-managed run ruff format {{args}} python/src python/tests bin
 
 check-pytest *args:

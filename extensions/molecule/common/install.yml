@@ -70,12 +70,13 @@
       ansible.builtin.file:
         path: "{{ item }}/test.txt"
         state: touch
+        mode: "0644"
       loop: "{{ molecule_tmpdir }}"
 
     - name: Create RabbitMQ server
       delegate_to: localhost
       become: false
-      run_once: true
+      run_once: true  # noqa: run-once[task]
       block:
         - name: Deploy RabbitMQ to the RKE2 cluster
           kubernetes.core.k8s:
@@ -222,7 +223,9 @@
       rescue:
         - name: Collect RabbitMQ connectivity diagnostics
           ansible.builtin.shell:
+            executable: /bin/bash
             cmd: |
+              set -o pipefail
               echo "# listeners"; ss -ltn
               echo "# addresses"; ip -br addr
               echo "# nat rules for {{ rabbitmq_port }}"; iptables-save -t nat | grep -E "{{ rabbitmq_port }}" || true

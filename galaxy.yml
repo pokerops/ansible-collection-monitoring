@@ -13,6 +13,7 @@ tags:
   - opensearch
   - elastic
   - beats
+  - monitoring
 dependencies:
   "nephelaiio.plugins": "*"
 repository: http://github.com/pokerops/ansible-collection-monitoring
@@ -27,3 +28,22 @@ build_ignore:
   - ansible_collections
   - argocd
   - libvirt
+  - bin
+  - dist
+  - python
+  - tests
+  - DESIGN.md
+  - noxfile.py
+  - renovate.json
+  - .github
+  - .gitignore
+  - .kubeconfig
+  - .nox
+  - .pytest_cache
+  - .ruff_cache
+  - CLAUDE.md
+  - devbox.json
+  - devbox.lock
+  - justfile
+  - uv.lock
+  - pyproject.toml

@@ -41,7 +41,7 @@
         _pairs: "nephelaiio.plugins.pairs"
         _cons: "nephelaiio.plugins.cons"
 
-    - name: Verify Vector install params
+    - name: Install Vector package
       when: ansible_facts.os_family == "Debian"
       block:
         - name: Install Vector agent
@@ -73,6 +73,7 @@
           ExecReload=
           ExecReload=-/usr/bin/vector validate --no-environment --config-dir {{ monitoring_vector_conf_path }}
           ExecReload=/bin/kill -HUP $MAINPID
+        mode: "0644"
       notify: systemd_reload
 
     - name: Create Vector configuration directory

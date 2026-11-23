@@ -56,4 +56,5 @@
       ansible.builtin.copy:
         content: "{{ kubeconfig_query.content | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: ' ~ rke2_api_url) }}"
         dest: "{{ molecule_local_kubeconfig }}"
+        mode: "0600"
       delegate_to: localhost
