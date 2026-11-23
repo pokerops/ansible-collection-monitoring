@@ -3,7 +3,7 @@ sources:
 {% for rmq in vector_rabbitmq_checks %}
   rabbitmq_check_{{ loop.index0 }}:
     type: "amqp"
-    connection_string: "{{ rmq.connection_string }}"
+    connection_string: "{{ rmq.connection_string }}{{ "" if "?" in rmq.connection_string else "?heartbeat=" ~ vector_rabbitmq_heartbeat }}"
     consumer: "{{ rmq.consumer }}"
 {% if rmq.exchange_key is defined %}
     exchange_key: "{{ rmq.exchange_key }}"

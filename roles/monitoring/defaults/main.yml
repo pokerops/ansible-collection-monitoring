@@ -21,6 +21,8 @@ monitoring_vector_metricbeat_port: 9204
 monitoring_vector_filebeat_port: 9201
 monitoring_vector_heartbeat_port: 9202
 monitoring_vector_packetbeat_port: 9203
+# AMQP heartbeat in seconds, a dead broker connection is detected after two to three intervals (the broker default is 60)
+monitoring_vector_rabbitmq_heartbeat: 10
 monitoring_vector_output_file_enable: false
 monitoring_vector_output_file_size: 52428800
 monitoring_vector_output_file_count: 7

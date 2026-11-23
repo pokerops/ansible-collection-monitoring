@@ -290,6 +290,7 @@
             vector_rabbitmq_environment: "{{ monitoring_agent_environment }}"
             vector_rabbitmq_function: "{{ monitoring_agent_function }}"
             vector_rabbitmq_checks: "{{ monitoring_rabbitmq_settings }}"
+            vector_rabbitmq_heartbeat: "{{ monitoring_vector_rabbitmq_heartbeat }}"
             beat_elasticsearch_hosts: "{{ monitoring_elasticsearch_hosts }}"
             beat_elasticsearch_username: "{{ monitoring_elasticsearch_username }}"
             beat_elasticsearch_password: "{{ monitoring_elasticsearch_password }}"

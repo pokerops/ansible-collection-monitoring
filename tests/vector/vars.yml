@@ -22,6 +22,7 @@ vector_rabbitmq_index: rabbitmq
 vector_rabbitmq_location: test-location
 vector_rabbitmq_environment: test-environment
 vector_rabbitmq_function: test-function
+vector_rabbitmq_heartbeat: 10
 vector_rabbitmq_checks:
   - connection_string: amqp://test:test@localhost:5672/test
     consumer: vector
