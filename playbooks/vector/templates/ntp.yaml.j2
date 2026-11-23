@@ -22,6 +22,7 @@ sources:
 transforms:
   ntp_data:
     type: "remap"
+    drop_on_error: true
     inputs: ["ntp_check"]
     source: |
       # Convert server_time to ISO8601 format

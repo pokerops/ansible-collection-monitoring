@@ -15,22 +15,16 @@ tests:
               assert!(is_timestamp(.@timestamp))
               assert_eq!(.ntp_peer_offset, 0.0125)
 
-  # remap does not drop events on error, so a failed conversion forwards the
-  # event unmodified and logs the error
-  - name: ntp events with a non numeric offset are forwarded unmodified
+  # a failed conversion drops the event, so a bad value never reaches an index mapping
+  - name: ntp events with a non numeric offset are dropped
     inputs:
       - insert_at: ntp_data
         type: log
         log_fields:
           timestamp: "2026-11-22T15:34:31.158Z"
           ntp_peer_offset: "unreachable"
-    outputs:
-      - extract_from: ntp_data
-        conditions:
-          - type: vrl
-            source: |
-              assert_eq!(.ntp_peer_offset, "unreachable")
-              assert!(!exists(.@timestamp))
+    no_outputs_from:
+      - ntp_data
 
   - name: filesystem events are timestamped
     inputs:
@@ -81,16 +75,11 @@ tests:
               assert!(is_timestamp(.@timestamp))
               assert!(!exists(.queue))
 
-  - name: rabbitmq messages that are not json are forwarded unmodified
+  - name: rabbitmq messages that are not json are dropped
     inputs:
       - insert_at: rabbitmq_data
         type: log
         log_fields:
           message: "not json"
-    outputs:
-      - extract_from: rabbitmq_data
-        conditions:
-          - type: vrl
-            source: |
-              assert_eq!(.message, "not json")
-              assert!(!exists(.fields))
+    no_outputs_from:
+      - rabbitmq_data

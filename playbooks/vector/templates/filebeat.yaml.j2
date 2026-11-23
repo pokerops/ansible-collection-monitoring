@@ -2,6 +2,7 @@
 {% block transforms %}
   mongodb_data:
     type: "remap"
+    drop_on_error: true
     inputs: ["{{ beat_name }}_data"]
     source: |
       .vectortemp.filename = downcase(string!(.log.file.path))
@@ -33,6 +34,7 @@
       del(.vectortemp)
   mysqlrouter_data:
     type: "remap"
+    drop_on_error: true
     inputs: ["mongodb_data"]
     source: |
       .vectortemp.filename = downcase(string!(.log.file.path))

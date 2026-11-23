@@ -80,9 +80,9 @@ provisioner:
           rabbitmq_user_name: molecule
           rabbitmq_user_pass: molecule
           rabbitmq_queue: "vector-{{ inventory_hostname }}"
-          rabbitmq_host: "{{ rke2_kubevip_address }}"
-          rabbitmq_port: 30672
-          rabbitmq_api_port: 31672
+          rabbitmq_host: "{{ rke2_ippool_private | ansible.utils.ipaddr('-1') | ansible.utils.ipaddr('address') }}" #  fixed address from private pool
+          rabbitmq_port: 5672
+          rabbitmq_api_port: 15672
           # Monitoring params
           monitoring_agent: "${MONITORING_AGENT:-alloy}"
           monitoring_vector_output_file_enable: true

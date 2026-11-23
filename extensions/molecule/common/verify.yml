@@ -361,9 +361,11 @@
             label: "{{ item.vhost }} - {{ item.queue }}"
           loop: "{{ _monitoring_rabbitmq_checks }}"
 
-        - name: Pause for 15 seconds to allow RabbitMQ receive message
-          ansible.builtin.pause:
-            seconds: 15
+        - name: Wait for the test message to reach the Vector log file
+          ansible.builtin.wait_for:
+            path: /var/log/vector/rabbitmq.log
+            search_regex: "{{ _rabbitmq_message.date | regex_escape }}"
+            timeout: 240
 
         - name: Slurp rabbitmq events
           ansible.builtin.slurp:

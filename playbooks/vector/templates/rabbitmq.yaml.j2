@@ -35,6 +35,7 @@ sources:
 transforms:
   rabbitmq_data:
     type: "remap"
+    drop_on_error: true
     inputs: ["rabbitmq_check_*"]
     source: |
       . = parse_json!(string!(.message))

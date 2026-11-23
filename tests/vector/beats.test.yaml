@@ -122,3 +122,15 @@ tests:
             source: |
               assert_eq!(.message, "not a mysqlrouter line")
               assert!(!exists(.mysqlrouter))
+
+  - name: filebeat mongodb events with malformed json are dropped
+    inputs:
+      - insert_at: mongodb_data
+        type: log
+        log_fields:
+          log:
+            file:
+              path: /var/log/mongodb/mongod.log
+          message: "not json"
+    no_outputs_from:
+      - mongodb_data

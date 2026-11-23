@@ -133,19 +133,19 @@
               metadata:
                 name: rabbitmq
                 namespace: rabbitmq
+                annotations:
+                  metallb.io/loadBalancerIPs: "{{ rabbitmq_host }}"
               spec:
-                type: NodePort
+                type: LoadBalancer
                 selector:
                   app: rabbitmq
                 ports:
                   - name: amqp
                     port: 5672
                     targetPort: amqp
-                    nodePort: "{{ rabbitmq_port }}"
                   - name: management
                     port: 15672
                     targetPort: management
-                    nodePort: "{{ rabbitmq_api_port }}"
 
         - name: Wait for RabbitMQ
           ansible.builtin.wait_for:

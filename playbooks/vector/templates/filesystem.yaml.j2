@@ -42,6 +42,7 @@ sources:
 transforms:
   filesystem_data:
     type: "remap"
+    drop_on_error: true
     inputs: ["filesystem_check_*"]
     source: |
       # Convert server_time to ISO8601 format
