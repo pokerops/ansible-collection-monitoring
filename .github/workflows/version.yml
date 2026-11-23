@@ -14,7 +14,7 @@ jobs:
       - name: Run version consistency check
         uses: pokerops/ansible-utils@master
         with:
-          run: just install pyversion
+          run: just install check-version
   tag:
     runs-on: ubuntu-latest
     steps:

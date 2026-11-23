@@ -1,0 +1,96 @@
+---
+tests:
+  - name: ntp offset is converted to a float and timestamped
+    inputs:
+      - insert_at: ntp_data
+        type: log
+        log_fields:
+          timestamp: "2026-11-22T15:34:31.158Z"
+          ntp_peer_offset: "0.0125"
+    outputs:
+      - extract_from: ntp_data
+        conditions:
+          - type: vrl
+            source: |
+              assert!(is_timestamp(.@timestamp))
+              assert_eq!(.ntp_peer_offset, 0.0125)
+
+  # remap does not drop events on error, so a failed conversion forwards the
+  # event unmodified and logs the error
+  - name: ntp events with a non numeric offset are forwarded unmodified
+    inputs:
+      - insert_at: ntp_data
+        type: log
+        log_fields:
+          timestamp: "2026-11-22T15:34:31.158Z"
+          ntp_peer_offset: "unreachable"
+    outputs:
+      - extract_from: ntp_data
+        conditions:
+          - type: vrl
+            source: |
+              assert_eq!(.ntp_peer_offset, "unreachable")
+              assert!(!exists(.@timestamp))
+
+  - name: filesystem events are timestamped
+    inputs:
+      - insert_at: filesystem_data
+        type: log
+        log_fields:
+          timestamp: "2026-11-22T15:34:31.158Z"
+          path: /var/lib/test/file
+    outputs:
+      - extract_from: filesystem_data
+        conditions:
+          - type: vrl
+            source: |
+              assert!(is_timestamp(.@timestamp))
+              assert_eq!(.path, "/var/lib/test/file")
+
+  - name: rabbitmq messages are parsed and labelled with the host settings
+    inputs:
+      - insert_at: rabbitmq_data
+        type: log
+        log_fields:
+          message: '{"timestamp":"2026-11-22T15:34:31.158Z","routing":"events","exchange":"events_exchange","body":"hello"}'
+    outputs:
+      - extract_from: rabbitmq_data
+        conditions:
+          - type: vrl
+            source: |
+              assert_eq!(format_timestamp!(.@timestamp, "%+"), "2026-11-22T15:34:31.158+00:00")
+              assert_eq!(.queue, "events")
+              assert_eq!(.exchange, "events_exchange")
+              assert_eq!(.body, "hello")
+              assert_eq!(.fields.location, "test-location")
+              assert_eq!(.fields.environment, "test-environment")
+              assert_eq!(.fields.function, "test-function")
+              assert!(!exists(.message))
+
+  - name: rabbitmq messages without a timestamp get the current time
+    inputs:
+      - insert_at: rabbitmq_data
+        type: log
+        log_fields:
+          message: '{"body":"hello"}'
+    outputs:
+      - extract_from: rabbitmq_data
+        conditions:
+          - type: vrl
+            source: |
+              assert!(is_timestamp(.@timestamp))
+              assert!(!exists(.queue))
+
+  - name: rabbitmq messages that are not json are forwarded unmodified
+    inputs:
+      - insert_at: rabbitmq_data
+        type: log
+        log_fields:
+          message: "not json"
+    outputs:
+      - extract_from: rabbitmq_data
+        conditions:
+          - type: vrl
+            source: |
+              assert_eq!(.message, "not json")
+              assert!(!exists(.fields))

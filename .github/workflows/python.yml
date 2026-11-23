@@ -13,9 +13,9 @@ jobs:
     strategy:
       matrix:
         target:
-          - types
-          - pybuild
-          - nox
+          - check-types
+          - check-build
+          - check-nox
     steps:
       - name: Run python ${{ matrix.target }}
         uses: pokerops/ansible-utils@master
