@@ -41,7 +41,7 @@
         _pairs: "nephelaiio.plugins.pairs"
         _cons: "nephelaiio.plugins.cons"
 
-    - name: Verify Vector install params
+    - name: Install Vector package
       when: ansible_facts.os_family == "Debian"
       block:
         - name: Install Vector agent
@@ -64,6 +64,9 @@
     - name: Deploy Vector service overrides
       ansible.builtin.copy:
         dest: /etc/systemd/system/vector.service.d/vector.conf
+        owner: root
+        group: root
+        mode: "0644"
         content: |
           [Service]
           ExecStart=

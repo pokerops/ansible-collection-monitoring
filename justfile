@@ -96,7 +96,7 @@ check-vector:
   for BEAT in filebeat heartbeat metricbeat; do
     render "${BEAT}" -e "beat_name=${BEAT}" -e "beat_port=9200" -e "beat_elasticsearch_index=${BEAT}"
   done
-  for NAME in alloy filesystem ntp rabbitmq; do
+  for NAME in filesystem ntp rabbitmq; do
     render "${NAME}"
   done
   docker run --rm --network none \

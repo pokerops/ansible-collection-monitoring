@@ -2,7 +2,6 @@
 # Variables used to render the Vector templates for transform tests. Only the
 # values that appear inside transforms matter, the rest need to render
 vector_output_file_enable: true
-vector_alloy_port: 9205
 vector_monitor_script_path: /usr/local/bin/monitor
 beat_elasticsearch_hosts: []
 beat_elasticsearch_username: test
