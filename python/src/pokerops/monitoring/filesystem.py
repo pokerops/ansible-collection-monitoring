@@ -1,5 +1,6 @@
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
@@ -161,8 +162,10 @@ def files(
 
     print(json.dumps(data))
 
-    stderr = Console(stderr=True)
-    stderr.print(f"Unexpected error occurred while scanning path: {path}")
+    # Vector decodes stderr as events, so the hint is only for interactive use, the error is already in the json event
+    if sys.stderr.isatty():
+        stderr = Console(stderr=True)
+        stderr.print(f"Unexpected error occurred while scanning path: {path}")
 
     raise typer.Exit(code=1)
 

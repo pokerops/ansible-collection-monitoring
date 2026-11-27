@@ -1,9 +1,11 @@
 ---
-monitoring_vector_version: "0.55.0"
+# renovate: datasource=github-releases depName=vectordotdev/vector extractVersion=^v(?<version>.+)$
+monitoring_vector_version: "0.62.0"
 
 monitoring_script_venv: /opt/pokerops
 monitoring_script_repo_url: "https://github.com/pokerops/ansible-collection-monitoring.git"
 monitoring_script_repo_version: "0.2.5"
+monitoring_script_package: "" #  optional path for local wheel build, overrides monitoring_script_repo_url when set
 monitoring_script_path: /usr/local/bin/monitor
 
 monitoring_agent_location: ""
@@ -15,6 +17,8 @@ monitoring_vector_metricbeat_port: 9204
 monitoring_vector_filebeat_port: 9201
 monitoring_vector_heartbeat_port: 9202
 monitoring_vector_packetbeat_port: 9203
+# AMQP heartbeat in seconds, a dead broker connection is detected after two to three intervals (the broker default is 60)
+monitoring_vector_rabbitmq_heartbeat: 10
 monitoring_vector_output_file_enable: false
 monitoring_vector_output_file_size: 52428800
 monitoring_vector_output_file_count: 7

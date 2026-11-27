@@ -381,6 +381,7 @@ class TestFiles:
         assert exc_info.value.exit_code == 1
 
         captured = capsys.readouterr()
+        assert captured.err == ""
         output = json.loads(captured.out)
 
         # Should include error information

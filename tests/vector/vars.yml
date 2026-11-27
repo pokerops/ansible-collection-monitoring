@@ -1,0 +1,28 @@
+---
+# Variables used to render the Vector templates for transform tests. Only the
+# values that appear inside transforms matter, the rest need to render
+vector_output_file_enable: true
+vector_alloy_port: 9205
+vector_monitor_script_path: /usr/local/bin/monitor
+beat_elasticsearch_hosts: []
+beat_elasticsearch_username: test
+beat_elasticsearch_password: test
+vector_ntp_interval: 60
+vector_ntp_index: ntp
+vector_ntp_location: test-location
+vector_ntp_environment: test-environment
+vector_ntp_function: test-function
+vector_filesystem_index: filesystem
+vector_filesystem_location: test-location
+vector_filesystem_environment: test-environment
+vector_filesystem_function: test-function
+vector_filesystem_checks:
+  - path: /var/lib/test
+vector_rabbitmq_index: rabbitmq
+vector_rabbitmq_location: test-location
+vector_rabbitmq_environment: test-environment
+vector_rabbitmq_function: test-function
+vector_rabbitmq_heartbeat: 10
+vector_rabbitmq_checks:
+  - connection_string: amqp://test:test@localhost:5672/test
+    consumer: vector

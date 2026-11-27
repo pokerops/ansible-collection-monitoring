@@ -1,5 +1,5 @@
 ---
-- name: Load collection defaults
+- name: Verify monitoring configuration
   import_playbook: pokerops.monitoring.check
 
 - name: Install and configure beat packages

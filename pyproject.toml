@@ -33,7 +33,8 @@ module-name = "pokerops.monitoring"
 source-include = ["python/tests/**"]
 
 [tool.pyright]
-include = ["python/src", "python/tests"]
+include = ["python/src", "python/tests", "bin"]
+extraPaths = ["bin"]
 venvPath = "."
 venv = ".venv"
 exclude = [".venv"]
@@ -47,6 +48,7 @@ reportUnknownArgumentType = false
 [tool.ruff]
 line-length = 160
 target-version = "py312"
+src = [".", "src", "bin"]
 
 [tool.ruff.lint]
 select = [
@@ -65,7 +67,8 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.pytest.ini_options]
-testpaths = ["python/tests"]
+testpaths = ["python/tests", "bin/tests"]
+pythonpath = ["bin"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

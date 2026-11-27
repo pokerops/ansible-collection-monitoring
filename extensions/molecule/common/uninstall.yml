@@ -1,2 +1,3 @@
 ---
-- import_playbook: pokerops.monitoring.uninstall
+- name: Uninstall monitoring
+  import_playbook: pokerops.monitoring.uninstall

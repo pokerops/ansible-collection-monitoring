@@ -2,12 +2,13 @@
 {% block transforms %}
   mongodb_data:
     type: "remap"
+    drop_on_error: true
     inputs: ["{{ beat_name }}_data"]
     source: |
       .vectortemp.filename = downcase(string!(.log.file.path))
       if match(.vectortemp.filename, r'.*mongodb?.log') {
         .vectortemp.message = parse_json!(string!(.message))
-        .mongodb.timestamp = parse_timestamp!(.vectortemp.message.t."$$date", format: "%+")
+        .mongodb.timestamp = parse_timestamp!(get!(.vectortemp.message.t, ["\u{24}date"]), format: "%+")
         .mongodb.severity = .vectortemp.message.s
         .mongodb.component = .vectortemp.message.c
         .mongodb.log_id = .vectortemp.message.id
@@ -33,6 +34,7 @@
       del(.vectortemp)
   mysqlrouter_data:
     type: "remap"
+    drop_on_error: true
     inputs: ["mongodb_data"]
     source: |
       .vectortemp.filename = downcase(string!(.log.file.path))

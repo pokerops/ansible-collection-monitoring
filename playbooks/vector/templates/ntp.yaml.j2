@@ -11,14 +11,18 @@ sources:
       "{{ vector_monitor_script_path }}",
       "ntp",
       "drift",
-      "--location {{ vector_ntp_location }}",
-      "--environment {{ vector_ntp_environment}}",
-      "--function {{ vector_ntp_function }}"
+      "--location",
+      "{{ vector_ntp_location }}",
+      "--environment",
+      "{{ vector_ntp_environment}}",
+      "--function",
+      "{{ vector_ntp_function }}"
     ]
 
 transforms:
   ntp_data:
     type: "remap"
+    drop_on_error: true
     inputs: ["ntp_check"]
     source: |
       # Convert server_time to ISO8601 format
