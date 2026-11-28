@@ -75,9 +75,6 @@ provisioner:
           rke2_token: "secret"
           rke2_kubevip_address: "{{ molecule_api_vip }}"
           rke2_longhorn_replica_count: 2
-          # The servicemonitor crd arrives via the argocd git sync, which can take longer than the default 5m wait
-          rke2_retry_num: 30
-          rke2_retry_delay: 45
           # RabbitMQ test params
           rabbitmq_vhost: molecule
           rabbitmq_user_name: molecule
