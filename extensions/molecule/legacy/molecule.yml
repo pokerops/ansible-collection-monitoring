@@ -7,12 +7,27 @@ dependency:
 driver:
   name: default
 platforms:
-  - name: monitoring-${MOLECULE_SCENARIO_NAME}-client-01
+  - name: monitoring-${MOLECULE_SCENARIO_NAME}-server-01
     image: "${MOLECULE_KVM_IMAGE}"
-    cpu: 2
-    mem: 4
+    cpu: 4
+    mem: 8
     groups:
       - monitoring_clients
+      - rke2_server
+  - name: monitoring-${MOLECULE_SCENARIO_NAME}-server-02
+    image: "${MOLECULE_KVM_IMAGE}"
+    cpu: 4
+    mem: 8
+    groups:
+      - monitoring_clients
+      - rke2_server
+  - name: monitoring-${MOLECULE_SCENARIO_NAME}-server-03
+    image: "${MOLECULE_KVM_IMAGE}"
+    cpu: 4
+    mem: 8
+    groups:
+      - monitoring_clients
+      - rke2_server
 provisioner:
   name: ansible
   env:
@@ -38,8 +53,12 @@ provisioner:
           ansible_ssh_extra_args: "-o ControlPersist=no -o ControlPath=none"
           libvirt_user: molecule
           libvirt_address: "172.31.252.1/24"
+          # The rke2 platform images alone take over 13G, the default guest disk leaves no headroom
+          libvirt_guest_size: "40G"
           libvirt_platforms: "{{ molecule_yml.platforms }}"
-          molecule_pool_private: "{{ libvirt_address | ansible.utils.ipsubnet(32, -2) }}"
+          # Control plane VIP, carved out of the block between the guests (consecutive from .2) and the end of the network
+          molecule_pool_api: "{{ libvirt_address | ansible.utils.ipsubnet((libvirt_address | ansible.utils.ipaddr('prefix') | int) + 2, 1) }}"
+          molecule_api_vip: "{{ molecule_pool_api | ansible.utils.ipaddr('1') | ansible.utils.ipaddr('address') }}"
           molecule_install_dir: "{{ lookup('ansible.builtin.env', 'MOLECULE_OUTPUT_DIR', default='/tmp/logs') }}"
           molecule_install_log: "{{ molecule_install_dir }}/${MOLECULE_SCENARIO_NAME}"
           molecule_local_kubeconfig: "{{ lookup('ansible.builtin.env', 'MOLECULE_LOCAL_KUBECONFIG') }}"
@@ -47,11 +66,25 @@ provisioner:
             - /tmp/molecule
             - /tmp/filesystem
           # RKE2 params
-          rke2_cluster_name: opensearch.pokerops.net
-          rke2_ippool_private: "{{ molecule_pool_private }}"
+          rke2_frr_config_dir: "{{ lookup('ansible.builtin.env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}/frr"
+          rke2_cluster_name: monitoring.pokerops.net
+          rke2_ippool_private: "172.16.16.0/24"
+          rke2_metallb_mode: bgp
+          rke2_metallb_bgp_asn: 64513
           rke2_api_url: "https://api.{{ rke2_cluster_name }}:6443"
           rke2_token: "secret"
+          rke2_kubevip_address: "{{ molecule_api_vip }}"
+          rke2_longhorn_replica_count: 2
+          # RabbitMQ test params
+          rabbitmq_vhost: molecule
+          rabbitmq_user_name: molecule
+          rabbitmq_user_pass: molecule
+          rabbitmq_queue: "vector-{{ inventory_hostname }}"
+          rabbitmq_host: "{{ rke2_ippool_private | ansible.utils.ipaddr('-1') | ansible.utils.ipaddr('address') }}" #  fixed address from private pool
+          rabbitmq_port: 5672
+          rabbitmq_api_port: 15672
           # Monitoring params
+          monitoring_mode_legacy: true
           monitoring_vector_output_file_enable: true
           monitoring_agent_location: "local"
           monitoring_agent_environment: "molecule"
@@ -119,12 +152,9 @@ provisioner:
             molecule:
               - username: "{{ rabbitmq_user_name }}"
                 password: "{{ rabbitmq_user_pass }}"
-                host: "{{ inventory_hostname }}"
+                host: "{{ rabbitmq_host }}"
+                port: "{{ rabbitmq_port }}"
                 queue: "{{ rabbitmq_queue }}"
-          rabbitmq_vhost: molecule
-          rabbitmq_user_name: molecule
-          rabbitmq_user_pass: molecule
-          rabbitmq_queue: vector
 
 verifier:
   name: ansible

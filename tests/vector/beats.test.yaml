@@ -1,0 +1,136 @@
+---
+tests:
+  - name: beat events get an ISO8601 timestamp and agent hostname
+    inputs:
+      - insert_at: heartbeat_data
+        type: log
+        log_fields:
+          timestamp: "2026-11-22T15:34:31.158Z"
+          agent:
+            name: server-01
+    outputs:
+      - extract_from: heartbeat_data
+        conditions:
+          - type: vrl
+            source: |
+              assert!(is_timestamp(.@timestamp))
+              assert_eq!(.agent.hostname, "server-01")
+
+  - name: filebeat mongodb events are parsed from the json log line
+    inputs:
+      - insert_at: mongodb_data
+        type: log
+        log_fields:
+          log:
+            file:
+              path: /var/log/mongodb/mongod.log
+          message: >-
+            {"t":{"$date":"2026-11-22T15:34:16Z"},"s":"I","c":"NETWORK","id":10001,
+            "ctx":"listener","msg":"Connection accepted","attr":{"remote":"10.0.0.1:12345"}}
+    outputs:
+      - extract_from: mongodb_data
+        conditions:
+          - type: vrl
+            source: |
+              assert!(is_timestamp(.mongodb.timestamp))
+              assert_eq!(format_timestamp!(.mongodb.timestamp, "%+"), "2026-11-22T15:34:16+00:00")
+              assert_eq!(.mongodb.severity, "I")
+              assert_eq!(.mongodb.component, "NETWORK")
+              assert_eq!(.mongodb.log_id, 10001)
+              assert_eq!(.mongodb.context, "listener")
+              assert_eq!(.mongodb.message, "Connection accepted")
+              assert_eq!(.mongodb.attributes.remote, "10.0.0.1:12345")
+              assert!(!exists(.message))
+              assert!(!exists(.vectortemp))
+
+  - name: filebeat mongodb optional fields are kept when present
+    inputs:
+      - insert_at: mongodb_data
+        type: log
+        log_fields:
+          log:
+            file:
+              path: /var/log/mongodb/mongod.log
+          message: >-
+            {"t":{"$date":"2026-11-22T15:34:16Z"},"s":"W","c":"STORAGE","id":10002,
+            "ctx":"main","msg":"Slow query","svc":"R","tags":["a","b"],
+            "truncated":{"attr":{}},"size":120}
+    outputs:
+      - extract_from: mongodb_data
+        conditions:
+          - type: vrl
+            source: |
+              assert_eq!(.mongodb.service, "R")
+              assert_eq!(.mongodb.tags, ["a", "b"])
+              assert_eq!(.mongodb.size, 120)
+              assert!(exists(.mongodb.truncated))
+              assert!(!exists(.mongodb.attributes))
+
+  - name: filebeat events for other files are left untouched by the mongodb parser
+    inputs:
+      - insert_at: mongodb_data
+        type: log
+        log_fields:
+          log:
+            file:
+              path: /var/log/syslog
+          message: "not a mongodb line"
+    outputs:
+      - extract_from: mongodb_data
+        conditions:
+          - type: vrl
+            source: |
+              assert_eq!(.message, "not a mongodb line")
+              assert!(!exists(.mongodb))
+              assert!(!exists(.vectortemp))
+
+  - name: filebeat mysqlrouter events are parsed with grok
+    inputs:
+      - insert_at: mysqlrouter_data
+        type: log
+        log_fields:
+          log:
+            file:
+              path: /var/log/mysqlrouter/mysqlrouter.log
+          message: "2026-11-22 15:34:16 metadata_cache INFO [7f0db85cc700] server01:3306 / 33060 - mode=RW"
+    outputs:
+      - extract_from: mysqlrouter_data
+        conditions:
+          - type: vrl
+            source: |
+              assert!(is_timestamp(.mysqlrouter.timestamp))
+              assert_eq!(.mysqlrouter.type, "metadata_cache")
+              assert_eq!(.mysqlrouter.level, "INFO")
+              assert_eq!(.mysqlrouter.thread_id, "7f0db85cc700")
+              assert_eq!(.mysqlrouter.message, "server01:3306 / 33060 - mode=RW")
+              assert!(!exists(.message))
+              assert!(!exists(.vectortemp))
+
+  - name: filebeat events for other files are left untouched by the mysqlrouter parser
+    inputs:
+      - insert_at: mysqlrouter_data
+        type: log
+        log_fields:
+          log:
+            file:
+              path: /var/log/syslog
+          message: "not a mysqlrouter line"
+    outputs:
+      - extract_from: mysqlrouter_data
+        conditions:
+          - type: vrl
+            source: |
+              assert_eq!(.message, "not a mysqlrouter line")
+              assert!(!exists(.mysqlrouter))
+
+  - name: filebeat mongodb events with malformed json are dropped
+    inputs:
+      - insert_at: mongodb_data
+        type: log
+        log_fields:
+          log:
+            file:
+              path: /var/log/mongodb/mongod.log
+          message: "not json"
+    no_outputs_from:
+      - mongodb_data

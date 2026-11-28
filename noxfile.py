@@ -3,7 +3,7 @@
 import nox
 
 # Python versions to test
-PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
 # Use uv for faster environment creation
 nox.options.default_venv_backend = "uv"
@@ -25,7 +25,7 @@ def lint(session):
     """Run linting (only on Python 3.12)."""
     session.install(".")
     session.install("ruff>=0.8.0")
-    session.run("ruff", "check", "python/src", "python/tests")
+    session.run("ruff", "check", "python/src", "python/tests", "bin")
 
 
 @nox.session(python="3.12")
@@ -33,7 +33,7 @@ def format_check(session):
     """Check code formatting (only on Python 3.12)."""
     session.install(".")
     session.install("ruff>=0.8.0")
-    session.run("ruff", "format", "--check", "python/src", "python/tests")
+    session.run("ruff", "format", "--check", "python/src", "python/tests", "bin")
 
 
 @nox.session(python="3.12")

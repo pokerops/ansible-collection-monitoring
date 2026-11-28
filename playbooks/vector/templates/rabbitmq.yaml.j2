@@ -1,9 +1,9 @@
 ---
 sources:
 {% for rmq in vector_rabbitmq_checks %}
-  rabbitmq_{{ loop.index0 }}:
+  rabbitmq_check_{{ loop.index0 }}:
     type: "amqp"
-    connection_string: "{{ rmq.connection_string }}"
+    connection_string: "{{ rmq.connection_string }}{{ "" if "?" in rmq.connection_string else "?heartbeat=" ~ vector_rabbitmq_heartbeat }}"
     consumer: "{{ rmq.consumer }}"
 {% if rmq.exchange_key is defined %}
     exchange_key: "{{ rmq.exchange_key }}"
@@ -35,7 +35,8 @@ sources:
 transforms:
   rabbitmq_data:
     type: "remap"
-    inputs: ["rabbitmq_*"]
+    drop_on_error: true
+    inputs: ["rabbitmq_check_*"]
     source: |
       . = parse_json!(string!(.message))
       if exists(.routing) {

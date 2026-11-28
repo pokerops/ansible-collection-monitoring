@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "enabledManagers": [
+    "custom.regex"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Pinned component versions annotated with a renovate comment",
+      "managerFilePatterns": [
+        "/^roles/.+/defaults/.+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+?) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?\\n\\S+_version:\\s*\"(?<currentValue>[^\"]+)\""
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Container images pinned in justfile variables, the renovate image itself included",
+      "managerFilePatterns": [
+        "/^justfile$/"
+      ],
+      "matchStrings": [
+        "[A-Z_]+_IMAGE := '(?<depName>[^':]+):(?<currentValue>[^'/][^']*)'"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    }
+  ]
+}

@@ -1,4 +1,40 @@
 ---
+- name: Verify load balancer reachability over BGP
+  hosts: localhost
+  gather_facts: false
+  vars:
+    _pool: "{{ rke2_ippool_private }}"
+  tasks:
+    - name: Query load balancer services
+      kubernetes.core.k8s_info:
+        kubeconfig: "{{ molecule_local_kubeconfig }}"
+        kind: Service
+      register: _lb_query
+      retries: 15
+      delay: 20
+      vars:
+        _lbs: "{{ _lb_query.resources | selectattr('spec.type', 'equalto', 'LoadBalancer') | list }}"
+      until:
+        - _lbs | length > 0
+        - _lbs | rejectattr('status.loadBalancer.ingress', 'defined') | list | length == 0
+
+    - name: Verify load balancer addresses belong to the BGP pool
+      ansible.builtin.assert:
+        that: item.status.loadBalancer.ingress[0].ip | ansible.utils.ipaddr(_pool)
+        fail_msg: "{{ item.metadata.namespace }}/{{ item.metadata.name }} has no address in {{ _pool }}"
+      loop: "{{ _lb_query.resources | selectattr('spec.type', 'equalto', 'LoadBalancer') | list }}"
+      loop_control:
+        label: "{{ item.metadata.namespace }}/{{ item.metadata.name }}"
+
+    - name: Verify load balancer addresses are reachable from localhost
+      ansible.builtin.wait_for:
+        host: "{{ item.status.loadBalancer.ingress[0].ip }}"
+        port: "{{ item.spec.ports | map(attribute='port') | first }}"
+        timeout: 60
+      loop: "{{ _lb_query.resources | selectattr('spec.type', 'equalto', 'LoadBalancer') | list }}"
+      loop_control:
+        label: "{{ item.metadata.namespace }}/{{ item.metadata.name }}"
+
 - name: Install and configure beat packages
   hosts: all:!localhost
   become: true
@@ -31,6 +67,7 @@
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
+        mode: "0755"
       loop:
         - "/var/log/mongodb"
         - "/var/log/mysqlrouter"
@@ -41,6 +78,7 @@
         dest: "{{ item.path }}"
         owner: root
         group: syslog
+        mode: "0640"
       vars:
         _ansible_date: "{{ ansible_date_time }}"
       loop_control:
@@ -231,18 +269,20 @@
           ansible.builtin.set_fact:
             ansible_python_interpreter: "{{ _virtualenv_python }}"
 
+        - name: Build RabbitMQ test message
+          ansible.builtin.set_fact:
+            _rabbitmq_message:
+              text: "This is a test message"
+              date: "{{ ansible_date_time.iso8601 }}"
+
         - name: Publish a test message
           community.rabbitmq.rabbitmq_publish:
             exchange: "{{ rabbitmq_queue }}_exchange"
             routing_key: "{{ rabbitmq_queue }}.routing.key"
             url: "{{ item.connection_string }}"
-            body: "{{ _message | to_json }}"
+            body: "{{ _rabbitmq_message | to_json }}"
             content_type: "application/json"
             durable: true
-          vars:
-            _message:
-              text: "This is a test message"
-              date: "{{ ansible_date_time.iso8601 }}"
           loop_control:
             label: "{{ item.vhost }} - {{ item.queue }}"
           loop: "{{ _monitoring_rabbitmq_checks }}"
@@ -250,13 +290,6 @@
         - name: Pause for 15 seconds to allow RabbitMQ receive message
           ansible.builtin.pause:
             seconds: 15
-
-        - name: Query RabbitMQ messages
-          ansible.builtin.set_fact:
-            rabbitmq_query: "{{ lookup('community.rabbitmq.rabbitmq', url=_url, queue='molecule') }}"
-          vars:
-            _rabbitmq: "{{ _monitoring_rabbitmq_checks | first }}"
-            _url: "{{ _rabbitmq['connection_string'] }}"
 
         - name: Slurp rabbitmq events
           ansible.builtin.slurp:
@@ -269,10 +302,6 @@
           vars:
             _event_lines: "{{ rabbitmq_process_log.content | b64decode | split('\n') | reject('equalto', '') }}"
 
-        - name: Debug RabbitMQ query
-          ansible.builtin.debug:
-            var: rabbitmq_query
-
         - name: Debug RabbitMQ Vector log file
           ansible.builtin.debug:
             msg: "{{ rabbitmq_events }}"
@@ -280,18 +309,14 @@
         - name: Verify rabbitmq log ingest
           ansible.builtin.assert:
             that:
-              - (_match_keys | length) == (_query_keys | length)
-              - _events_data == _query_data
+              - _matches | length == _monitoring_rabbitmq_checks | length
+            fail_msg: "Expected {{ _monitoring_rabbitmq_checks | length }} Vector event(s) matching the published message, found {{ _matches | length }}"
           vars:
-            _input: "{{ _monitoring_rabbitmq_checks }}"
-            _input_queues: "{{ _input | map(attribute='queue') }}"
-            _events: "{{ rabbitmq_events }}"
-            _query: "{{ rabbitmq_query }}"
-            _query_keys: "{{ _query | map(attribute='json') | map('dict2items') | flatten | map(attribute='key') | unique }}"
-            _event_keys: "{{ _events | map('dict2items') | flatten | map(attribute='key') | unique }}"
-            _match_keys: "{{ _event_keys | select('in', _query_keys) }}"
-            _events_data: "{{ _events | map('nephelaiio.plugins.select_attributes', _match_keys) }}"
-            _query_data: "{{ _query | map(attribute='json') }}"
+            _matches: >-
+              {{ rabbitmq_events
+                 | selectattr('text', 'defined') | selectattr('text', 'equalto', _rabbitmq_message.text)
+                 | selectattr('date', 'defined') | selectattr('date', 'equalto', _rabbitmq_message.date)
+                 | list }}
 
       always:
         - name: Restore python interpreter

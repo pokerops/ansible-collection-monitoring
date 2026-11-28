@@ -3,20 +3,17 @@ sources:
   {{ beat_name }}_tcp:  
     type: "logstash"
     address: "0.0.0.0:{{ beat_port }}"
-    mode: "tcp"
 
 transforms:
   {{ beat_name }}_data:
     type: "remap"
+    drop_on_error: true
     inputs: ["{{ beat_name }}_tcp"]
     source: |
       # Convert server_time to ISO8601 format
       .@timestamp = parse_timestamp!(.timestamp, format: "%+")
       .agent.hostname = .agent.name
-{% filter indent(width=2, first=True) %}
-{% block transforms %}
-{% endblock transforms %}
-{% endfilter %}
+{% block transforms %}{% endblock transforms %}
 
 sinks:
   {% if beat_elasticsearch_hosts | length > 0 -%}
